@@ -9,6 +9,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The main command handler that dispatches incoming commands to a service.
+ *
+ * @author Bas Piepers
+ *
+ * // FIXME: not used yet.
  */
 public class SlotCommandHandlerVerticle extends AbstractVerticle {
 
@@ -24,6 +28,6 @@ public class SlotCommandHandlerVerticle extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
-        // TODO: code for dispatching incoming commands to services.
+        // TODO: to be implemented
     }
 }

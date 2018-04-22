@@ -23,7 +23,7 @@ public class Slot implements JsonDomainObject {
     private final String player;
 
     public Slot(JsonObject jsonObject) {
-     this.id = SlotId.of(jsonObject.getLong("id"));
+     this.id = SlotId.of(jsonObject.getString("id"));
      this.name = jsonObject.getString("name");
      this.score = jsonObject.getLong("score");
      this.created = jsonObject.getInstant("created");

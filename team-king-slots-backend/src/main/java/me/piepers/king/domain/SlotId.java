@@ -1,9 +1,10 @@
 package me.piepers.king.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
+
+import java.util.UUID;
 
 /**
  * Represents the unique identifier of a {@link Slot}
@@ -12,22 +13,27 @@ import io.vertx.core.json.JsonObject;
  */
 @DataObject
 public class SlotId {
-    private final Long id;
+    private final String id;
 
     public SlotId(JsonObject jsonObject) {
-        this.id = jsonObject.getLong("id");
+        this.id = jsonObject.getString("id");
     }
 
-    private SlotId(final Long id) {
+    private SlotId(final String id) {
         this.id = id;
     }
 
     @JsonCreator
-    public static SlotId of(final Long id) {
+    public static SlotId of(final String id) {
         return new SlotId(id);
     }
 
-    public Long getId() {
+    // Convenience method to instantiate with a UUID.
+    public static SlotId create() {
+        return new SlotId(UUID.randomUUID().toString());
+    }
+
+    public String getId() {
         return id;
     }
 

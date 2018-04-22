@@ -3,12 +3,13 @@ package me.piepers.king.application;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.ext.web.Route;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.BodyHandler;
 import io.vertx.reactivex.ext.web.handler.StaticHandler;
+import me.piepers.king.reactivex.domain.SlotService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,9 @@ public class HttpServerVerticle extends AbstractVerticle {
 
     private Integer port;
 
+    // FIXME: for now a direct reference to the (proxy of) the SlotService. Must be decoupled to a command handler later on.
+    private SlotService slotService;
+
     @Override
     public void init(Vertx vertx, Context context) {
         super.init(vertx, context);
@@ -38,6 +42,9 @@ public class HttpServerVerticle extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> future) throws Exception {
+        // Instantiate the service we will communicate with for the prototype. Later on this must be decoupled.
+        slotService = SlotService.createProxy(vertx);
+
         Router router = Router.router(vertx);
 
         router.route().handler(BodyHandler.create());
@@ -45,8 +52,12 @@ public class HttpServerVerticle extends AbstractVerticle {
         // TODO: doesn't exist yet (index.html).
         router.route("/*").handler(StaticHandler.create("index.html"));
 
-        // Rest endpoints
-        // TODO
+        // Rest endpoints in a subrouter
+        Router subRouter = Router.router(vertx);
+        // TODO: create rest endpoints with handlers for slot machines.
+        subRouter.route(HttpMethod.GET, "start");
+
+        router.mountSubRouter("/api", subRouter);
 
         // Start the server
         vertx.createHttpServer().requestHandler(router::accept).rxListen(this.port).subscribe(result -> {
