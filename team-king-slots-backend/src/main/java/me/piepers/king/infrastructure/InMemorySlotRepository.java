@@ -67,4 +67,18 @@ public class InMemorySlotRepository implements SlotRepository {
 
 
     }
+
+    @Override
+    public void findById(String uuid, Handler<AsyncResult<Slot>> resultHandler) {
+        if (Objects.isNull(uuid)) {
+            resultHandler.handle(ServiceException.fail(503, "Unable to find a slot due to missing id."));
+        } else {
+            Slot slot = slots.get(SlotId.of(uuid));
+            if (Objects.nonNull(slot)) {
+                resultHandler.handle(Future.succeededFuture(slot));
+            } else {
+                resultHandler.handle(ServiceException.fail(404, "Unable to find a slot with id " + uuid));
+            }
+        }
+    }
 }

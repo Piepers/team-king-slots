@@ -7,16 +7,18 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.ext.web.Router;
+import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.handler.BodyHandler;
 import io.vertx.reactivex.ext.web.handler.StaticHandler;
 import me.piepers.king.reactivex.domain.SlotService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /**
- * The Http server which responds to Rest API calls.
+ * The Http server which responds to Rest API calls, handles static content as well as web-socket communication.
  *
  * @author Bas Piepers
  */
@@ -38,6 +40,8 @@ public class HttpServerVerticle extends AbstractVerticle {
 
         this.port = httpServerOptional.map(obj -> obj.getInteger("port"))
                 .orElse(8080);
+
+        this.slotService = SlotService.createProxy(super.vertx);
     }
 
     @Override
@@ -54,8 +58,10 @@ public class HttpServerVerticle extends AbstractVerticle {
 
         // Rest endpoints in a subrouter
         Router subRouter = Router.router(vertx);
-        // TODO: create rest endpoints with handlers for slot machines.
-        subRouter.route(HttpMethod.GET, "start");
+        subRouter.route(HttpMethod.GET, "/start").handler(this::startHandler);
+        subRouter.route(HttpMethod.POST, "/quit/:slotId").handler(this::quitHandler);
+        subRouter.route(HttpMethod.POST, "/spin/:slotId").handler(this::spinHandler);
+        subRouter.route(HttpMethod.POST, "/stop/:slotId").handler(this::stopHandler);
 
         router.mountSubRouter("/api", subRouter);
 
@@ -67,5 +73,45 @@ public class HttpServerVerticle extends AbstractVerticle {
             LOGGER.error("Http server failed to start.");
             future.fail(throwable);
         });
+    }
+
+    private void startHandler(RoutingContext routingContext) {
+        LOGGER.debug("Invoking start end-point");
+        routingContext
+                .response()
+                .setStatusCode(200)
+                .putHeader("Content-Type", "application/json; charset=utf-8")
+                .end(example("Start").encode(), StandardCharsets.UTF_8.name());
+    }
+
+    private void quitHandler(RoutingContext routingContext) {
+        LOGGER.debug("Invoking quit end-point");
+        routingContext
+                .response()
+                .setStatusCode(200)
+                .putHeader("Content-Type", "application/json; charset=utf-8")
+                .end(example("Quit").encode(), StandardCharsets.UTF_8.name());
+    }
+
+    private void spinHandler(RoutingContext routingContext) {
+        LOGGER.debug("Invoking spin end-point");
+        routingContext
+                .response()
+                .setStatusCode(200)
+                .putHeader("Content-Type", "application/json; charset=utf-8")
+                .end(example("Spin").encode(), StandardCharsets.UTF_8.name());
+    }
+
+    private void stopHandler(RoutingContext routingContext) {
+        LOGGER.debug("Invoking sop end-point");
+        routingContext
+                .response()
+                .setStatusCode(200)
+                .putHeader("Content-Type", "application/json; charset=utf-8")
+                .end(example("Stop").encode(), StandardCharsets.UTF_8.name());
+    }
+
+    private JsonObject example(String function) {
+        return new JsonObject().put("Function", function).put("Result", "Ok");
     }
 }

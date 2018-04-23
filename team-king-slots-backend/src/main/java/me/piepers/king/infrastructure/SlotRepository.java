@@ -50,4 +50,11 @@ public interface SlotRepository {
      *                       the slot was not found.
      */
     void deleteById(String uuid, Handler<AsyncResult<Slot>> resultHandler);
+
+    /**
+     * Retrieves a {@link Slot} by its id.
+     * @param uuid, the unique identifier of the {@link Slot}.
+     * @param resultHandler, contains the {@link Slot} in case it was found.
+     */
+    void findById(String uuid, Handler<AsyncResult<Slot>> resultHandler);
 }
