@@ -1,5 +1,6 @@
 package me.piepers.king.domain;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
@@ -10,6 +11,7 @@ import io.vertx.core.json.JsonObject;
  */
 @DataObject
 public class SpinResult implements JsonDomainObject {
+    @JsonUnwrapped
     private final SlotId slotId;
     // TODO: just a bogus result for now
     private final String result;

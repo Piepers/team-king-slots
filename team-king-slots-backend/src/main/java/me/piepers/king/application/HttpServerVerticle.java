@@ -99,10 +99,8 @@ public class HttpServerVerticle extends AbstractVerticle {
                             .setStatusCode(503)
                             .putHeader("Content-Type", "application/json; charset=UTF-8")
                             .end(new JsonObject()
-                                    .put("Error",
-                                            throwable
-                                                    .getMessage())
-                                    .encodePrettily());
+                                    .put("Error", throwable.getMessage())
+                                    .encode(), StandardCharsets.UTF_8.name());
                 });
 
 
@@ -132,30 +130,64 @@ public class HttpServerVerticle extends AbstractVerticle {
                                 .response()
                                 .setStatusCode(503)
                                 .putHeader("Content-Type", "application/json; charset=UTF-8")
-                                .end(new JsonObject().put("Error", throwable.getMessage()).encodePrettily());
+                                .end(new JsonObject().put("Error", throwable.getMessage()).encode(), StandardCharsets.UTF_8.name());
                     });
         }
     }
 
     private void spinHandler(RoutingContext routingContext) {
         LOGGER.debug("Invoking spin end-point");
-        routingContext
-                .response()
-                .setStatusCode(200)
-                .putHeader("Content-Type", "application/json; charset=utf-8")
-                .end(example("Spin").encode(), StandardCharsets.UTF_8.name());
+        String id = routingContext.request().getParam("slotId");
+        if (Objects.isNull(id)) {
+            routingContext
+                    .response()
+                    .setStatusCode(400)
+                    .end();
+
+        } else {
+            slotService.rxSpin(id)
+                    .subscribe(spinResult -> {
+                        LOGGER.debug("Spinresult is {}", spinResult.toString());
+                        routingContext.response().putHeader("Content-Type", "application/json; charset=UTF-8")
+                                .end(spinResult.toJson().encode(), StandardCharsets.UTF_8.name());
+                    }, throwable -> {
+                        LOGGER.error("Error while trying to invoke \"spin\".", throwable);
+                        routingContext
+                                .response()
+                                .putHeader("Content-Type", "application/json; charset=UTF-8")
+                                .end(new JsonObject()
+                                        .put("Error", throwable.getMessage())
+                                        .encode(), StandardCharsets.UTF_8.name());
+                    });
+        }
     }
 
     private void stopHandler(RoutingContext routingContext) {
         LOGGER.debug("Invoking sop end-point");
-        routingContext
-                .response()
-                .setStatusCode(200)
-                .putHeader("Content-Type", "application/json; charset=utf-8")
-                .end(example("Stop").encode(), StandardCharsets.UTF_8.name());
-    }
 
-    private JsonObject example(String function) {
-        return new JsonObject().put("Function", function).put("Result", "Ok");
+        String id = routingContext.request().getParam("slotId");
+        if (Objects.isNull(id)) {
+            routingContext
+                    .response()
+                    .setStatusCode(400)
+                    .end();
+        } else {
+            slotService.rxStop(id)
+                    .subscribe(slot -> {
+                        LOGGER.debug("Stopped spinning for id {}", id);
+                        routingContext
+                                .response()
+                                .putHeader("Content-Type", "application/json; charset=UTF-8")
+                                .end(slot.toJson().encode(), StandardCharsets.UTF_8.name());
+                    }, throwable -> {
+                        LOGGER.error("Failure while trying to stop spinning.", throwable);
+                        routingContext
+                                .response()
+                                .putHeader("Content-Type", "application/json; charset=UTF-8")
+                                .end(new JsonObject()
+                                        .put("Error", throwable.getMessage())
+                                        .encode(), StandardCharsets.UTF_8.name());
+                    });
+        }
     }
 }

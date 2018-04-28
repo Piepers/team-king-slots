@@ -12,8 +12,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import javax.xml.ws.Service;
-
 @RunWith(VertxUnitRunner.class)
 public class SlotServiceImplTest {
     private Vertx vertx;
