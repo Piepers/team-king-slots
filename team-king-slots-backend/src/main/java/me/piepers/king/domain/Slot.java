@@ -10,7 +10,6 @@ import java.time.Instant;
  * Slot domain model object that stores the state of a slot
  *
  * @author Bas Piepers
- *
  */
 @DataObject
 public class Slot implements JsonDomainObject {
@@ -21,18 +20,20 @@ public class Slot implements JsonDomainObject {
     private final Long score;
     private final Instant created;
     private final String player;
+    private SlotStatus status;
 
     public Slot(JsonObject jsonObject) {
-     this.id = SlotId.of(jsonObject.getString("id"));
-     this.name = jsonObject.getString("name");
-     this.score = jsonObject.getLong("score");
-     this.created = jsonObject.getInstant("created");
-     this.player = jsonObject.getString("player");
-
+        this.id = SlotId.of(jsonObject.getString("id"));
+        this.name = jsonObject.getString("name");
+        this.score = jsonObject.getLong("score");
+        this.created = jsonObject.getInstant("created");
+        this.player = jsonObject.getString("player");
+        this.status = SlotStatus.resolve(jsonObject.getString("status"));
     }
 
-    public Slot(SlotId id, String name, Long score, Instant created, String player) {
+    public Slot(SlotId id, SlotStatus status, String name, Long score, Instant created, String player) {
         this.id = id;
+        this.status = status;
         this.name = name;
         this.score = score;
         this.created = created;
@@ -41,10 +42,20 @@ public class Slot implements JsonDomainObject {
 
     // BUSINESS LOGIC
     public SpinResult spin() {
+        this.status = SlotStatus.SPINNING;
         return SpinResult.create(this.id);
     }
 
-    // GETTERS AND SETTERS
+    public Slot stop() {
+        if (this.status == SlotStatus.SPINNING) {
+            this.status = SlotStatus.IDLE;
+            return this;
+        } else {
+            throw new IllegalStateException("This slot machine is not spinning and can therefore not be stopped.");
+        }
+    }
+
+    // GETTERS
     public SlotId getId() {
         return id;
     }
@@ -65,6 +76,10 @@ public class Slot implements JsonDomainObject {
         return player;
     }
 
+    public SlotStatus getStatus() {
+        return status;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -76,7 +91,8 @@ public class Slot implements JsonDomainObject {
         if (!name.equals(slot.name)) return false;
         if (!score.equals(slot.score)) return false;
         if (!created.equals(slot.created)) return false;
-        return player.equals(slot.player);
+        if (!player.equals(slot.player)) return false;
+        return status == slot.status;
     }
 
     @Override
@@ -86,6 +102,7 @@ public class Slot implements JsonDomainObject {
         result = 31 * result + score.hashCode();
         result = 31 * result + created.hashCode();
         result = 31 * result + player.hashCode();
+        result = 31 * result + status.hashCode();
         return result;
     }
 
@@ -97,6 +114,7 @@ public class Slot implements JsonDomainObject {
                 ", score=" + score +
                 ", created=" + created +
                 ", player='" + player + '\'' +
+                ", status=" + status +
                 '}';
     }
 }

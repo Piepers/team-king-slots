@@ -7,6 +7,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import me.piepers.king.infrastructure.SlotServiceImpl;
 
+
 /**
  * Main service that handles slot related logic.
  *
