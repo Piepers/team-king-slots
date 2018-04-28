@@ -39,6 +39,12 @@ public class Slot implements JsonDomainObject {
         this.player = player;
     }
 
+    // BUSINESS LOGIC
+    public SpinResult spin() {
+        return SpinResult.create(this.id);
+    }
+
+    // GETTERS AND SETTERS
     public SlotId getId() {
         return id;
     }

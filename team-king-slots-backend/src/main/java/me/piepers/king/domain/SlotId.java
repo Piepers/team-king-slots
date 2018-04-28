@@ -12,7 +12,7 @@ import java.util.UUID;
  * @author Bas Piepers
  */
 @DataObject
-public class SlotId {
+public class SlotId implements JsonDomainObject {
     private final String id;
 
     public SlotId(JsonObject jsonObject) {

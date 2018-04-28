@@ -1,5 +1,6 @@
 package me.piepers.king.infrastructure;
 
+import io.reactivex.Single;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -8,6 +9,7 @@ import io.vertx.serviceproxy.ServiceException;
 import me.piepers.king.domain.Slot;
 import me.piepers.king.domain.SlotId;
 import me.piepers.king.domain.SlotService;
+import me.piepers.king.domain.SpinResult;
 import me.piepers.king.reactivex.infrastructure.SlotRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +31,7 @@ public class SlotServiceImpl implements SlotService {
     }
 
     @Override
-    public void start(Handler<AsyncResult<String>> resultHandler) {
+    public void start(Handler<AsyncResult<SlotId>> resultHandler) {
         // Instantiate a Slot
         SlotId id = SlotId.create();
         Slot slot = new Slot(id, "Free Slot " + id.getId(), 0L, Instant.now(), "John Doe");
@@ -38,7 +40,7 @@ public class SlotServiceImpl implements SlotService {
                 .rxAdd(slot)
                 .subscribe(s -> resultHandler
                                 // And return it
-                                .handle(Future.succeededFuture(s.getId().getId())),
+                                .handle(Future.succeededFuture(s.getId())),
                         throwable -> resultHandler
                                 .handle(ServiceException.fail(503, throwable.getMessage())));
     }
@@ -46,16 +48,24 @@ public class SlotServiceImpl implements SlotService {
     @Override
     public void quit(String uuid, Handler<AsyncResult<Void>> resultHandler) {
         repository
-                // Don't do anything in case an error occured.
                 .rxDeleteById(uuid)
-                .doOnError(throwable -> LOGGER.error("Unable to delete slot with id {}", uuid))
-                .subscribe(slot -> resultHandler.handle(Future.succeededFuture()));
+                .subscribe(slot -> resultHandler.handle(Future.succeededFuture()),
+                        throwable -> {
+                            LOGGER.error("Unable to delete slot with id {}", uuid);
+                            resultHandler.handle(ServiceException.fail(503, throwable.getMessage()));
+                        });
 
     }
 
     @Override
-    public void spin(String uuid, Handler<AsyncResult<Slot>> resultHandler) {
-
+    public void spin(String uuid, Handler<AsyncResult<SpinResult>> resultHandler) {
+        repository
+                .rxFindById(uuid)
+                .flatMap(slot -> Single.just(slot
+                        .spin()))
+                .subscribe(spinResult -> resultHandler
+                        .handle(Future.succeededFuture(spinResult)),
+                        throwable -> resultHandler.handle(Future.failedFuture(throwable)));
     }
 
     @Override

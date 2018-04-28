@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -59,38 +60,81 @@ public class HttpServerVerticle extends AbstractVerticle {
         // Rest endpoints in a subrouter
         Router subRouter = Router.router(vertx);
         subRouter.route(HttpMethod.GET, "/start").handler(this::startHandler);
-        subRouter.route(HttpMethod.POST, "/quit/:slotId").handler(this::quitHandler);
+        subRouter.route(HttpMethod.GET, "/quit/:slotId").handler(this::quitHandler);
         subRouter.route(HttpMethod.POST, "/spin/:slotId").handler(this::spinHandler);
         subRouter.route(HttpMethod.POST, "/stop/:slotId").handler(this::stopHandler);
 
         router.mountSubRouter("/api", subRouter);
 
         // Start the server
-        vertx.createHttpServer().requestHandler(router::accept).rxListen(this.port).subscribe(result -> {
-            LOGGER.debug("Http server has started on port {}.", this.port);
-            future.complete();
-        }, throwable -> {
-            LOGGER.error("Http server failed to start.");
-            future.fail(throwable);
-        });
+        vertx.
+                createHttpServer()
+                .requestHandler(router::accept)
+                .rxListen(this.port)
+                .subscribe(result -> {
+                    LOGGER.debug("Http server has started on port {}.", this.port);
+                    future.complete();
+                }, throwable -> {
+                    LOGGER.error("Http server failed to start.");
+                    future.fail(throwable);
+                });
     }
 
     private void startHandler(RoutingContext routingContext) {
         LOGGER.debug("Invoking start end-point");
-        routingContext
-                .response()
-                .setStatusCode(200)
-                .putHeader("Content-Type", "application/json; charset=utf-8")
-                .end(example("Start").encode(), StandardCharsets.UTF_8.name());
+
+        slotService
+                .rxStart()
+                .subscribe(slotId -> {
+                    LOGGER.debug("Started slot. Received id: {}", slotId);
+                    routingContext
+                            .response()
+                            .setStatusCode(200)
+                            .putHeader("Content-Type", "application/json; charset=UTF-8")
+                            .end(slotId.toJson().encode(), StandardCharsets.UTF_8.name());
+                }, throwable -> {
+                    LOGGER.error("An error occurred while trying to start a new Slot.", throwable.getMessage());
+                    routingContext
+                            .response()
+                            .setStatusCode(503)
+                            .putHeader("Content-Type", "application/json; charset=UTF-8")
+                            .end(new JsonObject()
+                                    .put("Error",
+                                            throwable
+                                                    .getMessage())
+                                    .encodePrettily());
+                });
+
+
     }
 
     private void quitHandler(RoutingContext routingContext) {
         LOGGER.debug("Invoking quit end-point");
-        routingContext
-                .response()
-                .setStatusCode(200)
-                .putHeader("Content-Type", "application/json; charset=utf-8")
-                .end(example("Quit").encode(), StandardCharsets.UTF_8.name());
+
+        String id = routingContext.request().getParam("slotId");
+        if (Objects.isNull(id)) {
+            routingContext
+                    .response()
+                    .setStatusCode(400)
+                    .end();
+        } else {
+            slotService
+                    .rxQuit(id)
+                    .subscribe(() -> {
+                        LOGGER.debug("Quit Slot with id {}", id);
+                        routingContext
+                                .response()
+                                .setStatusCode(200)
+                                .end();
+                    }, throwable -> {
+                        LOGGER.error("An error occured while trying to stop slot with id {}", id);
+                        routingContext
+                                .response()
+                                .setStatusCode(503)
+                                .putHeader("Content-Type", "application/json; charset=UTF-8")
+                                .end(new JsonObject().put("Error", throwable.getMessage()).encodePrettily());
+                    });
+        }
     }
 
     private void spinHandler(RoutingContext routingContext) {

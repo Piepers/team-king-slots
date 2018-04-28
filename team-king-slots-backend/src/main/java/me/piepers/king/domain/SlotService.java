@@ -31,7 +31,7 @@ public interface SlotService {
      *
      * @param resultHandler, the result handler with the created id for the slot.
      */
-    void start(Handler<AsyncResult<String>> resultHandler);
+    void start(Handler<AsyncResult<SlotId>> resultHandler);
 
     /**
      * A signal that a player quits playing a slot so that it can be discarded.
@@ -50,7 +50,7 @@ public interface SlotService {
      * @param uuid, the id of the slot.
      * @param resultHandler, contains the slot that was just triggered or an error in case the given id doesn't exist.
      */
-    void spin(String uuid, Handler<AsyncResult<Slot>> resultHandler);
+    void spin(String uuid, Handler<AsyncResult<SpinResult>> resultHandler);
 
     /**
      * Stops spinning the reels manually. This is also done with a timer automatically but a user can also stop the
