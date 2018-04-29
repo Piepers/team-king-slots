@@ -1,6 +1,5 @@
 package me.piepers.king.domain;
 
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
@@ -11,28 +10,27 @@ import io.vertx.core.json.JsonObject;
  */
 @DataObject
 public class SpinResult implements JsonDomainObject {
-    @JsonUnwrapped
-    private final SlotId slotId;
+    private final Slot slot;
     // TODO: just a bogus result for now
     private final String result;
 
-    private SpinResult(SlotId slotId, String result) {
-        this.slotId = slotId;
+    private SpinResult(Slot slot, String result) {
+        this.slot = slot;
         this.result = result;
     }
 
     public SpinResult(JsonObject jsonObject) {
-        this.slotId = SlotId.of(jsonObject.getString("id"));
+        this.slot = new Slot(jsonObject.getJsonObject("slot"));
         this.result = jsonObject.getString("result");
     }
 
-    // A factory that is responsible to generate a result for the given slot id
-    public static SpinResult create(SlotId slotId) {
-        return new SpinResult(slotId, "YOU ARE A WINNER!!!");
+    // A factory that is responsible to generate a result for the given Slot
+    public static SpinResult create(Slot slot) {
+        return new SpinResult(slot, "YOU ARE A WINNER!!!");
     }
 
-    public SlotId getSlotId() {
-        return slotId;
+    public Slot getSlot() {
+        return slot;
     }
 
     public String getResult() {
@@ -46,13 +44,13 @@ public class SpinResult implements JsonDomainObject {
 
         SpinResult that = (SpinResult) o;
 
-        if (!slotId.equals(that.slotId)) return false;
+        if (!slot.equals(that.slot)) return false;
         return result.equals(that.result);
     }
 
     @Override
     public int hashCode() {
-        int result1 = slotId.hashCode();
+        int result1 = slot.hashCode();
         result1 = 31 * result1 + result.hashCode();
         return result1;
     }
@@ -60,7 +58,7 @@ public class SpinResult implements JsonDomainObject {
     @Override
     public String toString() {
         return "SpinResult{" +
-                "slotId=" + slotId +
+                "slot=" + slot +
                 ", result='" + result + '\'' +
                 '}';
     }

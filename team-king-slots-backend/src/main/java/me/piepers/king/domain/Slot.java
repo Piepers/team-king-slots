@@ -41,15 +41,15 @@ public class Slot implements JsonDomainObject {
     }
 
     // BUSINESS LOGIC
-    public SpinResult spin() {
+    public Slot spin() {
         this.status = SlotStatus.SPINNING;
-        return SpinResult.create(this.id);
+        return this;
     }
 
-    public Slot stop() {
+    public SpinResult stop() {
         if (this.status == SlotStatus.SPINNING) {
             this.status = SlotStatus.IDLE;
-            return this;
+            return SpinResult.create(this);
         } else {
             throw new IllegalStateException("This slot machine is not spinning and can therefore not be stopped.");
         }

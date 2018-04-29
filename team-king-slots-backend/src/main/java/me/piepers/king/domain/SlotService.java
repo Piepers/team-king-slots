@@ -51,15 +51,15 @@ public interface SlotService {
      * @param uuid, the id of the slot.
      * @param resultHandler, contains the slot that was just triggered or an error in case the given id doesn't exist.
      */
-    void spin(String uuid, Handler<AsyncResult<SpinResult>> resultHandler);
+    void spin(String uuid, Handler<AsyncResult<Slot>> resultHandler);
 
     /**
      * Stops spinning the reels manually. This is also done with a timer automatically but a user can also stop the
-     * spin manually. At the moment the service is only capable of stopping all the slots but later on it may be
+     * spin. At the moment the service is only capable of stopping all the slots but later on it may be
      * possible to stop just one or a sub-set of the reels that are spinning.
      * @param uuid, the id of the slot to stop the reels.
      * @param resultHandler, contains the Slot that was stopped with the score or an error in case the slot was not
      *                       found or in case the reels were not spinning.
      */
-    void stop(String uuid, Handler<AsyncResult<Slot>> resultHandler);
+    void stop(String uuid, Handler<AsyncResult<SpinResult>> resultHandler);
 }

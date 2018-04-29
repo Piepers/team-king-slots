@@ -54,22 +54,24 @@ public class SlotServiceImpl implements SlotService {
     }
 
     @Override
-    public void spin(String uuid, Handler<AsyncResult<SpinResult>> resultHandler) {
+    public void spin(String uuid, Handler<AsyncResult<Slot>> resultHandler) {
         repository
                 .rxFindById(uuid)
                 .flatMap(slot -> Single.just(slot
                         .spin()))
-                .subscribe(spinResult -> resultHandler
-                                .handle(Future.succeededFuture(spinResult)),
+                .flatMap(slot -> repository.rxSave(slot))
+                .subscribe(slot -> resultHandler
+                                .handle(Future.succeededFuture(slot)),
                         throwable -> resultHandler.handle(Future.failedFuture(throwable)));
     }
 
     @Override
-    public void stop(String uuid, Handler<AsyncResult<Slot>> resultHandler) {
+    public void stop(String uuid, Handler<AsyncResult<SpinResult>> resultHandler) {
         repository
                 .rxFindById(uuid)
                 .flatMap(slot -> Single.just(slot.stop()))
-                .subscribe(slot -> resultHandler.handle(Future.succeededFuture(slot)),
+                .doOnSuccess(spinResult -> repository.rxSave(spinResult.getSlot()))
+                .subscribe(spinResult -> resultHandler.handle(Future.succeededFuture(spinResult)),
                         throwable -> resultHandler.handle(ServiceException.fail(503, throwable.getMessage())));
     }
 }
