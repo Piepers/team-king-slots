@@ -16,7 +16,11 @@
             </div>
             <!--<button id="spin" />-->
             <!--<input id="result" type="text"/>-->
+
         </div>
+
+        <b-alert show>Default Alert</b-alert>
+
     </div>
 </template>
 
@@ -30,6 +34,7 @@
     @import "https://cdn.jsdeliver.net/npm/animate.css@3.5.1";
     /*@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css";*/
     @import "https://use.fontawesome.com/releases/v5.0.12/css/all.css";
+    @import "~bootstrap-vue";
 
     #container {
         position: fixed;
