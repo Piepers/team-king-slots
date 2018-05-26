@@ -24,4 +24,6 @@ export default new Router({
             component: proto
         }
     ]
+
+
 })

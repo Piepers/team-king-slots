@@ -5,8 +5,8 @@
             <router-link to="/proto">Play for free</router-link>
         </div>
         <!--<nav>-->
-            <!--<router-link to="/proto">Play for real</router-link>-->
-            <!--<router-link to="/proto">Play for free</router-link>-->
+        <!--<router-link to="/proto">Play for real</router-link>-->
+        <!--<router-link to="/proto">Play for free</router-link>-->
         <!--</nav>-->
         <!--<router-view/>-->
     </div>
@@ -31,7 +31,6 @@
         right: 0;
         margin: auto;
     }
-
     .navigate-group a {
         padding: 10px;
         text-decoration: none;
@@ -42,7 +41,6 @@
         font-weight: bold;
         margin-right: 15px;
     }
-
     nav {
         width: 300px;
         height: 100px;
@@ -55,7 +53,6 @@
         right: 0;
         margin: auto;
     }
-
     nav a {
         padding: 10px;
         text-decoration: none;

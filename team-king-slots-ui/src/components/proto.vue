@@ -1,94 +1,87 @@
 <!-- The prototype slot that just demonstrates the functionality of the backend. -->
 <template>
-    <div id="container">
-        <!--Contains the reels, buttons and other controls.-->
-        <div id="reel-container">
-            <!--The container with the reels.-->
-            <div id="reels">
-                <!-- Reels -->
-            </div>
-        </div>
-        <div id="control-container">
-            <!--The bottom of the container with the controls etc.-->
-            <div class="spin-controls">
-                <input type="text" placeholder="Good luck...!" name="result" disabled/>
-                <i class="fas fa-sync fa-3x"/>
-            </div>
-            <!--<button id="spin" />-->
-            <!--<input id="result" type="text"/>-->
-
-        </div>
-
-        <b-alert show>Default Alert</b-alert>
-
+    <div>
+        <h1>King Slots Prototype</h1>
+        <b-container>
+            <b-card>
+                <b-row align-h="center" class="mb-2" no-gutters>
+                    <b-col>
+                        <!-- Start of the grid with reel items -->
+                        <b-row no-gutters>
+                            <b-col class="reel-col">1</b-col>
+                            <b-col class="reel-col">4</b-col>
+                            <b-col class="reel-col">7</b-col>
+                            <b-col class="reel-col">10</b-col>
+                            <b-col class="reel-col">13</b-col>
+                        </b-row>
+                        <b-row no-gutters>
+                            <b-col class="reel-col">2</b-col>
+                            <b-col class="reel-col">5</b-col>
+                            <b-col class="reel-col">8</b-col>
+                            <b-col class="reel-col">11</b-col>
+                            <b-col class="reel-col">14</b-col>
+                        </b-row>
+                        <b-row no-gutters>
+                            <b-col class="reel-col">3</b-col>
+                            <b-col class="reel-col">6</b-col>
+                            <b-col class="reel-col">9</b-col>
+                            <b-col class="reel-col">12</b-col>
+                            <b-col class="reel-col">15</b-col>
+                        </b-row>
+                        <!-- End of the grid reel items -->
+                    </b-col>
+                </b-row>
+                <b-row>
+                    <b-col>
+                        <b-form-input readonly v-model="coins"/>
+                    </b-col>
+                    <b-col cols="5">
+                        <b-form-input readonly v-model="usermessage"/>
+                    </b-col>
+                    <b-col>
+                        <b-button variant="success" size="lg">Spin!</b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+        </b-container>
     </div>
 </template>
 
 <script>
     export default {
-        name: 'proto'
+        name: 'proto',
+        data() {
+            return {
+                slotId: "",
+                usermessage: "Welcome to this slot!",
+                coins: 2500
+            }
+        },
+        mounted() {
+            this.$http.get("http://localhost:8080/start").then(result => {
+                console.log('Result: ' + result.data);
+                this.slotId = result.body.id;
+            }, error => {
+                console.error(error);
+            });
+        },
+        methods: {
+            spinSlot() {
+                this.$http.post("http://localhost:8080/spin/", this.slotId, { headers: { "content-type": "application/json" } }).then(result => {
+                    console.log('Result: ' + result.data);
+                    this.response = result.data;
+                }, error => {
+                    console.error(error);
+                });
+            }
+        }
     }
 </script>
 
 <style scoped>
-    @import "https://cdn.jsdeliver.net/npm/animate.css@3.5.1";
-    /*@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css";*/
-    @import "https://use.fontawesome.com/releases/v5.0.12/css/all.css";
-    @import "~bootstrap-vue";
-
-    #container {
-        position: fixed;
-        top: 30%;
-        left: 35%;
-        width: 60em;
-        height: 38em;
-        margin-top: -9em;
-        margin-left: -15em;
-        border: 2px solid #F4791A;
-
-    }
-
-    #reel-container {
-        position: relative;
-        height: 60%;
-    }
-
-    #reels {
-        position: absolute;
-        left: 10%;
-        top: 5%;
-        width: 50em;
-        height: 20em;
-        /*border: 2px solid #7FC9FF;*/
-        background-color: white;
-    }
-
-    #control-container {
-        position: relative;
-        height: 30%;
-    }
-
-    .spin-controls {
-        float: right;
-        position: relative;
-        right: 75px;
-        top: 10px;
-    }
-
-    input {
-        width: calc(80% - 40px);
-        margin-right: 10px;
-        border: 0;
-        padding: 10px;
-        font-size: 1.3em;
-        /*background-color: #323333;*/
-        background-color: #FFF;
-        color: #687F7F;
-    }
-
-    i {
-        cursor: pointer;
-        color: white;
-        vertical-align: top;
+    .reel-col {
+        -ms-flex: 0 0 50px;
+        flex: 0 0 50px;
+        background-color: orange;
     }
 </style>
