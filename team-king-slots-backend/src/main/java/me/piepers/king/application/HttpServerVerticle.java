@@ -9,6 +9,7 @@ import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.handler.BodyHandler;
+import io.vertx.reactivex.ext.web.handler.CorsHandler;
 import io.vertx.reactivex.ext.web.handler.StaticHandler;
 import me.piepers.king.reactivex.domain.SlotService;
 import org.slf4j.Logger;
@@ -51,6 +52,9 @@ public class HttpServerVerticle extends AbstractVerticle {
         slotService = SlotService.createProxy(vertx);
 
         Router router = Router.router(vertx);
+
+        // Accept GET and POST requests from the client that runs on port 8081
+        router.route().handler(CorsHandler.create("http://localhost:8081").allowedMethod(HttpMethod.GET).allowedMethod(HttpMethod.POST).allowedMethod(HttpMethod.PUT));
 
         router.route().handler(BodyHandler.create());
 

@@ -44,10 +44,4 @@
     a {
         color: #42b983;
     }
-
-    .reel-col {
-        -ms-flex: 0 0 50px;
-        flex: 0 0 50px;
-        background-color: orange;
-    }
 </style>
