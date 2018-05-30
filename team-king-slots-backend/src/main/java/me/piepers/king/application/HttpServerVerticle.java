@@ -64,7 +64,7 @@ public class HttpServerVerticle extends AbstractVerticle {
         // Rest endpoints in a subrouter
         Router subRouter = Router.router(vertx);
         subRouter.route(HttpMethod.GET, "/start").handler(this::startHandler);
-        subRouter.route(HttpMethod.GET, "/quit/:slotId").handler(this::quitHandler);
+        subRouter.route(HttpMethod.PUT, "/quit/:slotId").handler(this::quitHandler);
         subRouter.route(HttpMethod.POST, "/spin/:slotId").handler(this::spinHandler);
         subRouter.route(HttpMethod.POST, "/stop/:slotId").handler(this::stopHandler);
 
