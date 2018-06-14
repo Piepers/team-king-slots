@@ -82,7 +82,7 @@
 <script>
     export default {
         name: 'proto',
-        props: ['slot'],
+//        props: ['slot'],
         data() {
             return {
                 slot: {
