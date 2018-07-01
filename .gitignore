@@ -4,6 +4,8 @@
 .vertx
 tomcat
 debug.log
+non-public-conf.json
+
 #
 # Front-end, generated when creating a standard Vue package.
 #
