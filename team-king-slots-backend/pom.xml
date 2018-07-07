@@ -8,8 +8,8 @@
 	<name>team-king-slots-backend</name>
 
 	<properties>
-		<java.version>1.8</java.version>
-		<vertx.version>3.5.1</vertx.version>
+		<java.version>10</java.version>
+		<vertx.version>3.5.2</vertx.version>
 		<configuration.class>${project.groupId}.TeamKingSlotsApplication</configuration.class>
 
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -105,10 +105,6 @@
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-rx-java2</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-web-client</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>

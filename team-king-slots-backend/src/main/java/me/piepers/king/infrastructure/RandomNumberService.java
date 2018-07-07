@@ -9,11 +9,10 @@ import io.vertx.core.Vertx;
 import java.util.Set;
 
 /**
- *
- * A service that generates random numbers for the slot machines.
+ * A service that generates random numbers. The implementations of this method use either a local variant of the random
+ * number generation for testing purposes or an external service to obtain the numbers.
  *
  * @author Bas Piepers
- *
  */
 @VertxGen
 @ProxyGen
@@ -21,7 +20,15 @@ public interface RandomNumberService {
 
     String EVENT_BUS_ADDRESS = "random-number-service";
 
-//    static RandomNumberService(Vertx vertx)
+    // FIXME: find a way to differentiate between a local service and an actual production ready service.
+    static RandomNumberService create(Vertx vertx) {
+        return new LocalRandomNumberServiceImpl();
+    }
+
+    static RandomNumberService createProxy(Vertx vertx) {
+        return new RandomNumberServiceVertxEBProxy(vertx, EVENT_BUS_ADDRESS);
+    }
+
 
     /**
      * Obtain a list of random numbers with a min/max and amount.
