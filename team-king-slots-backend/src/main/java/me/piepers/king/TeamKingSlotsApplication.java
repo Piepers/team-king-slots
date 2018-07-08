@@ -11,9 +11,11 @@ import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.serviceproxy.ServiceBinder;
 import me.piepers.king.application.HttpServerVerticle;
 import me.piepers.king.domain.SlotService;
-import me.piepers.king.infrastructure.SlotRepository;
+import me.piepers.king.infrastructure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 
 /**
@@ -26,15 +28,23 @@ public class TeamKingSlotsApplication extends AbstractVerticle {
     private static final Logger LOGGER = LoggerFactory.getLogger(TeamKingSlotsApplication.class);
 
     @Override
-    public void start(Future<Void> startFuture) throws Exception {
+    public void start(Future<Void> startFuture) {
+        // Determine in which profile this application runs based on the start variables. Takes local as the default.
+        final ConfigStoreOptions envStore = new ConfigStoreOptions().setType("env");
+
         // The main configuration of the application from the configuration file.
         final ConfigStoreOptions configStore = new ConfigStoreOptions().setType("file")
                 .setConfig(new JsonObject().put("path", "app-conf.json"));
-        final ConfigRetrieverOptions options = new ConfigRetrieverOptions().addStore(configStore);
+
+        final ConfigRetrieverOptions options = new ConfigRetrieverOptions().addStore(configStore).addStore(envStore);
 
         final ConfigRetriever configRetriever = ConfigRetriever.create(this.vertx, options);
 
-        configRetriever.rxGetConfig().flatMapCompletable(configuration -> {
+        configRetriever.rxGetConfig()
+                .flatMapCompletable(configuration -> {
+
+                    ApplicationProfile profile = ApplicationProfile.resolve(Optional.ofNullable(configuration.getString("profile")).orElse("local"));
+                    LOGGER.info("Using profile: {}", profile.getName());
 
                     // Register event bus services
                     new ServiceBinder(vertx.getDelegate())
@@ -42,6 +52,9 @@ public class TeamKingSlotsApplication extends AbstractVerticle {
                             .register(SlotRepository.class, SlotRepository.create(vertx.getDelegate()));
                     new ServiceBinder(vertx.getDelegate()).setAddress(SlotService.EVENT_BUS_ADDRESS)
                             .register(SlotService.class, SlotService.create(vertx.getDelegate()));
+                    new ServiceBinder(vertx.getDelegate()).setAddress(RandomNumberService.EVENT_BUS_ADDRESS)
+                            // The profile determines which random number service to choose. Always falls back to local.
+                            .register(RandomNumberService.class, profile == ApplicationProfile.LOCAL ? new LocalRandomNumberServiceImpl() : new RandomOrgNumberServiceImpl(vertx.getDelegate()));
 
                     return Completable.fromAction(() -> LOGGER.debug("Deploying Team King Slot machine backend"))
 //                    .andThen(this.vertx.rxDeployVerticle(SlotCommandHandlerVerticle.class.getName(), new DeploymentOptions().setConfig(configuration)))

@@ -1,5 +1,5 @@
 package me.piepers.king.infrastructure;
-;
+
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -9,8 +9,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.Set;
 
 @RunWith(VertxUnitRunner.class)
 public class LocalRandomNumberServiceImplTest {
@@ -34,7 +32,8 @@ public class LocalRandomNumberServiceImplTest {
         Async async = context.async();
         this.randomNumberService
                 .rxGetRandomNumbers(10, 0, 100)
-                .doAfterTerminate(async::complete)
-                .subscribe(integers -> context.assertTrue(integers.size() == 10), throwable -> context.fail());
+                .doFinally(async::complete)
+                .subscribe(integers -> context.assertTrue(integers.size() == 10, "Expected the list to contain 10 items but was: " + integers.size()),
+                        throwable -> context.fail());
     }
 }
