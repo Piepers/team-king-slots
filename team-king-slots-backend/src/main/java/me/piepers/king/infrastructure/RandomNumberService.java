@@ -35,8 +35,8 @@ public interface RandomNumberService {
      * @param amount,        the amount of numbers to obtain.
      * @param min,           the lowest value a number in the list of random numbers should have.
      * @param max,           the highest value a number in the list of random number should have.
-     * @param resultHandler, the result handler that contains a collection (a list) with the numbers it received from the
-     *                       web service.
+     * @param resultHandler, the result handler that contains a response dto that contains the random numbers but also
+     *                       information about how many requests we have left etc.
      */
-    void getRandomNumbers(Integer amount, Integer min, Integer max, Handler<AsyncResult<List<Integer>>> resultHandler);
+    void getRandomNumbers(Integer amount, Integer min, Integer max, Handler<AsyncResult<RandomNumberResponseDto>> resultHandler);
 }

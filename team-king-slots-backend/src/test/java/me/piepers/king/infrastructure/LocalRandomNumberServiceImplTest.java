@@ -33,7 +33,7 @@ public class LocalRandomNumberServiceImplTest {
         this.randomNumberService
                 .rxGetRandomNumbers(10, 0, 100)
                 .doFinally(async::complete)
-                .subscribe(integers -> context.assertTrue(integers.size() == 10, "Expected the list to contain 10 items but was: " + integers.size()),
+                .subscribe(result -> context.assertTrue(result.getData().size() == 10, "Expected the list to contain 10 items but was: " + result.getData().size()),
                         throwable -> context.fail());
     }
 }

@@ -1,6 +1,0 @@
-{
-  "http_server": {
-    "port": 8080,
-    "hostname": "localhost"
-  }
-}
