@@ -8,7 +8,7 @@ package me.piepers.king.infrastructure;
  */
 public enum ApplicationProfile {
 
-    LOCAL("Local"), PROD("Prod");
+    LOCAL("Local"), PROD("Production");
 
     private final String name;
 
@@ -23,7 +23,7 @@ public enum ApplicationProfile {
      * @return either an instance of PROD or LOCAL (default).
      */
     public static ApplicationProfile resolve(String name) {
-        if (name.equalsIgnoreCase("Prod")) {
+        if (name.equalsIgnoreCase("Production")) {
             return PROD;
         }
         return LOCAL;

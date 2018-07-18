@@ -42,7 +42,6 @@ public class TeamKingSlotsApplication extends AbstractVerticle {
 
         configRetriever.rxGetConfig()
                 .flatMapCompletable(configuration -> {
-
                     ApplicationProfile profile = ApplicationProfile.resolve(Optional.ofNullable(configuration.getString("profile")).orElse("local"));
                     LOGGER.info("Using profile: {}", profile.getName());
 
