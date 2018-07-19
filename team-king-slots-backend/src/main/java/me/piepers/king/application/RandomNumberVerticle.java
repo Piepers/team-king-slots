@@ -1,9 +1,13 @@
 package me.piepers.king.application;
 
+import io.reactivex.Completable;
+import io.reactivex.Single;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.shareddata.LocalMap;
 import io.vertx.reactivex.core.AbstractVerticle;
+import io.vertx.serviceproxy.ServiceException;
 import me.piepers.king.reactivex.infrastructure.RandomNumberService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +32,9 @@ public class RandomNumberVerticle extends AbstractVerticle {
     private static final Integer DEFAULT_HIGHEST_NUMBER = 1000;
     private static final Integer DEFAULT_LOWEST_NUMBER = 0;
     private static final Integer DEFAULT_BLOCK_AMOUNT = 2000;
+
+    private static final String REQUEST_COUNTER_LOCK = "request-counter";
+    private static final String SHARED_MAP = "shared-map";
 
     // The cache of random numbers.
     private ConcurrentLinkedDeque<Integer> rcache;
@@ -103,23 +110,91 @@ public class RandomNumberVerticle extends AbstractVerticle {
         });
     }
 
-    // Obtain lock on shared data.
-    // Get the map with random number service items.
-    // If it doesn't exist, create it.
-    // Test if the amount of requests is still enough to get a new block of numbers.
-    // Else replace the configuration items with the ones from the response.
-    // TODO: maintain the amount of requests and bits we are allowed to request in the vertx shared data.
     // TODO: handle fetch errors and monitor the amount of numbers that are available after a failure.
     private void getNextBlock() {
-        randomNumberService
-                .rxGetRandomNumbers(blockAmount, lowestNumber, highestNumber).subscribe(dto -> {
+        this.getRemainingRequests()
+                .flatMap(remaining -> {
+                    if (remaining > 0) {
+                        return randomNumberService
+                                .rxGetRandomNumbers(blockAmount, lowestNumber, highestNumber);
+                    } else {
+                        return Single.error(new ServiceException(500, "Unable to get new block of data. Insufficient requests left."));
+                    }
+                })
+                .subscribe(dto -> {
                     if (this.rcache.addAll(dto.getData())) {
                         LOGGER.info("Obtained next block of random numbers. Cache now contains {} items.",
                                 rcache.size());
                     } else {
                         LOGGER.error("Failed to add {} random numbers to cache.", dto.getData().size());
                     }
-                },
-                throwable -> LOGGER.error("Unable to obtain next block of numbers.", throwable));
+                }, throwable -> LOGGER.error("Unable to obtain next block of numbers.", throwable));
+
+
+    }
+
+    // TODO: Focuses on the amount of requests for now. Bits may be something we can take into account later.
+    private Single<Integer> getRemainingRequests() {
+        return this.vertx
+                .sharedData()
+                .rxGetLock(REQUEST_COUNTER_LOCK)
+                .doOnSuccess(lock -> LOGGER.debug("Obtained lock on {}.", lock.toString()))
+                .flatMap(lock ->
+                        this.getCreateSharedMap()
+                                .flatMap(localMap -> {
+                                    Integer bitsLeft = localMap.get("bitsLeft");
+                                    Integer requestsLeft = Optional.ofNullable(localMap.get("requestsLeft")).orElse(1);
+
+                                    LOGGER.debug("Bits left: {}; requests left: {}",
+                                            Objects.nonNull(bitsLeft) ? bitsLeft : "unknown", Objects.nonNull(requestsLeft) ? requestsLeft : "unknown");
+
+                                    return Single.just(requestsLeft);
+                                })
+
+                                .doFinally(lock::release)
+                                .doFinally(() -> LOGGER.debug("Released lock {}", lock.toString())));
+
+
+    }
+
+    private void writeRemaining(Integer bits, Integer requests) {
+
+        this.vertx
+                .sharedData()
+                .rxGetLock(REQUEST_COUNTER_LOCK)
+                .doOnSuccess(lock -> LOGGER.debug("Obtained lock on {}.", lock.toString()))
+                .flatMapCompletable(lock -> {
+                            LocalMap<String, Integer> localMap = this.vertx
+                                    .getDelegate()
+                                    .sharedData()
+                                    .getLocalMap(SHARED_MAP);
+
+                            LOGGER.debug("Writing {} and {} to bitsLeft and requestsLeft respectively...", bits, requests);
+
+                            localMap.put("bitsLeft", bits);
+                            localMap.put("requestsLeft", requests);
+
+                            lock.release();
+
+                            return Completable.complete();
+                        }
+                );
+
+//        this.vertx
+//                .sharedData()
+//                .rxGetLock(REQUEST_COUNTER_LOCK)
+//                .doOnSuccess(lock -> LOGGER.debug("Obtained lock on {}.", lock.toString()))
+//                .flatMapCompletable(lock ->
+//                        this.getCreateSharedMap()
+//                                .flatMapCompletable(localMap -> {
+//                                    localMap.put("bitsLeft", bits);
+//                                    localMap.put("requestsLeft", requests);
+//                                    return Completable.complete();
+//                                })
+//                                .doFinally(lock::release));
+    }
+
+    private Single<LocalMap<String, Integer>> getCreateSharedMap() {
+        return Single.just(this.vertx.getDelegate().sharedData().getLocalMap(SHARED_MAP));
     }
 }

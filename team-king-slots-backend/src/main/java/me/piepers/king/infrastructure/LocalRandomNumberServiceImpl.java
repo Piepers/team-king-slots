@@ -42,4 +42,5 @@ public class LocalRandomNumberServiceImpl implements RandomNumberService {
         LOGGER.debug("Generated {} numbers.", amount);
         resultHandler.handle(Future.succeededFuture(RandomNumberResponseDto.local(randomNumbers)));
     }
+
 }

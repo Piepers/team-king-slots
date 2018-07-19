@@ -5,7 +5,7 @@
   },
   "random_number_service": {
     "block_amount": 1000,
-    "initial_block_on_start": false,
+    "initial_block_on_start": true,
     "min_threshold": 100,
     "max_nrs_per_request": 100,
     "lowest_number": 0,
