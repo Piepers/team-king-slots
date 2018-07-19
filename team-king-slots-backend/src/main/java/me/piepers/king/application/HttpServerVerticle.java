@@ -67,6 +67,7 @@ public class HttpServerVerticle extends AbstractVerticle {
         subRouter.route(HttpMethod.PUT, "/quit/:slotId").handler(this::quitHandler);
         subRouter.route(HttpMethod.POST, "/spin/:slotId").handler(this::spinHandler);
         subRouter.route(HttpMethod.POST, "/stop/:slotId").handler(this::stopHandler);
+        subRouter.route(HttpMethod.GET, "/random/:amount").handler(this::randomNumberHandler);
 
         router.mountSubRouter("/api", subRouter);
 
@@ -176,7 +177,8 @@ public class HttpServerVerticle extends AbstractVerticle {
                     .setStatusCode(400)
                     .end();
         } else {
-            slotService.rxStop(id)
+            slotService
+                    .rxStop(id)
                     .subscribe(slot -> {
                         LOGGER.debug("Stopped spinning for id {}", id);
                         routingContext
@@ -193,5 +195,33 @@ public class HttpServerVerticle extends AbstractVerticle {
                                         .encode(), StandardCharsets.UTF_8.name());
                     });
         }
+    }
+
+    // TODO: temporary endpoint for testing purposes.
+    private void randomNumberHandler(RoutingContext routingContext) {
+        LOGGER.debug("Invoking random number end-point.");
+
+        Integer amount = Integer.valueOf(routingContext.request().getParam("amount"));
+        if (Objects.isNull(amount)) {
+            routingContext.response().setStatusCode(500).end();
+        } else {
+            this.vertx
+                    .eventBus()
+                    .<JsonObject>rxSend("get.numbers", new JsonObject().put("amount", amount))
+                    .subscribe(message ->
+                                    routingContext
+                                            .response()
+                                            .putHeader("Content-Type", "application/json; charset=UTF-8")
+                                            .end(message.body().encode(), StandardCharsets.UTF_8.name()),
+                            throwable -> routingContext
+                                    .response()
+                                    .putHeader("Content-Type", "application/json; UTF-8")
+                                    .end(new JsonObject()
+                                                    .put("Error", throwable
+                                                            .getMessage())
+                                                    .encode(),
+                                            StandardCharsets.UTF_8.name()));
+        }
+
     }
 }

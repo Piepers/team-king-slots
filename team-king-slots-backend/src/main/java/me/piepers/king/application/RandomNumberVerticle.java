@@ -4,6 +4,7 @@ import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.reactivex.core.AbstractVerticle;
@@ -88,12 +89,12 @@ public class RandomNumberVerticle extends AbstractVerticle {
             this.getNextBlock();
         }
 
-        vertx.eventBus().<JsonObject>consumer("get.numbers", message -> {
+        this.vertx.eventBus().<JsonObject>consumer("get.numbers", message -> {
             // TODO: expecting the message to contain a body with the "amount" of numbers that must be obtained but must handle this in case this is not present.
             Integer amount = message.body().getInteger("amount");
             if (amount > maxNrsPerRequest) {
                 message.fail(500, "The amount of requested items is larger than allowed.");
-            } else if (rcache.size() > amount) {
+            } else if (rcache.size() < amount) {
                 // In this case, we are requesting more items than we have available.
                 LOGGER.error("Amount of requested items ({}) is larger than we can handle (currently in stock: {}). Please increase the threshold to keep up with the amount of numbers that are requested.", amount, rcache.size());
                 message.fail(500, "The amount of requested items is larger than we can handle at the moment.");
@@ -102,12 +103,23 @@ public class RandomNumberVerticle extends AbstractVerticle {
                 while ((amount--) > 0) {
                     randomNumbers.add(rcache.pop());
                 }
-                message.reply(randomNumbers);
-
-                this.getNextBlock();
+                JsonArray jsonArray = new JsonArray(randomNumbers);
+                // TODO: dto
+                message.reply(new JsonObject().put("numbers", jsonArray));
+                this.handleThreshold();
             }
 
         });
+    }
+
+    private void handleThreshold() {
+        int size = rcache.size();
+        if (size <= minThreshHold) {
+            LOGGER.info("We have {} items in cache so we need to get the next block (threshold is: {}).", size, minThreshHold);
+            this.getNextBlock();
+        } else {
+            LOGGER.debug("Threshold not yet reached. Cache contains {} items, threshold is: {}", size, minThreshHold);
+        }
     }
 
     // TODO: handle fetch errors and monitor the amount of numbers that are available after a failure.
@@ -121,10 +133,12 @@ public class RandomNumberVerticle extends AbstractVerticle {
                         return Single.error(new ServiceException(500, "Unable to get new block of data. Insufficient requests left."));
                     }
                 })
+                .doOnError(this::handleServiceError)
                 .subscribe(dto -> {
                     if (this.rcache.addAll(dto.getData())) {
                         LOGGER.info("Obtained next block of random numbers. Cache now contains {} items.",
                                 rcache.size());
+                        this.writeRemaining(dto.getBitsLeft(), dto.getRequestsLeft());
                     } else {
                         LOGGER.error("Failed to add {} random numbers to cache.", dto.getData().size());
                     }
@@ -133,12 +147,23 @@ public class RandomNumberVerticle extends AbstractVerticle {
 
     }
 
+    // TODO: as a safety precaution we reset to 0 regardless of the error but might want to check that.
+    private void handleServiceError(Throwable throwable) {
+        if (throwable instanceof ServiceException && ((ServiceException) throwable).failureCode() == 402 || ((ServiceException) throwable).failureCode() == 403) {
+            LOGGER.debug("Error received from random service number indicating requests or bits are exhausted for today (code:{})", ((ServiceException) throwable).failureCode());
+        } else {
+            LOGGER.debug("The error had a different cause.", throwable.getMessage());
+        }
+
+        this.writeRemaining(0, 0);
+    }
+
     // TODO: Focuses on the amount of requests for now. Bits may be something we can take into account later.
     private Single<Integer> getRemainingRequests() {
         return this.vertx
                 .sharedData()
                 .rxGetLock(REQUEST_COUNTER_LOCK)
-                .doOnSuccess(lock -> LOGGER.debug("Obtained lock on {}.", lock.toString()))
+                .doOnSuccess(lock -> LOGGER.debug("Obtained lock on {}.", REQUEST_COUNTER_LOCK))
                 .flatMap(lock ->
                         this.getCreateSharedMap()
                                 .flatMap(localMap -> {
@@ -152,7 +177,7 @@ public class RandomNumberVerticle extends AbstractVerticle {
                                 })
 
                                 .doFinally(lock::release)
-                                .doFinally(() -> LOGGER.debug("Released lock {}", lock.toString())));
+                                .doFinally(() -> LOGGER.debug("Released lock {}", REQUEST_COUNTER_LOCK)));
 
 
     }
@@ -162,7 +187,7 @@ public class RandomNumberVerticle extends AbstractVerticle {
         this.vertx
                 .sharedData()
                 .rxGetLock(REQUEST_COUNTER_LOCK)
-                .doOnSuccess(lock -> LOGGER.debug("Obtained lock on {}.", lock.toString()))
+                .doOnSuccess(lock -> LOGGER.debug("Obtained lock on {}.", REQUEST_COUNTER_LOCK))
                 .flatMapCompletable(lock -> {
                             LocalMap<String, Integer> localMap = this.vertx
                                     .getDelegate()
@@ -178,20 +203,11 @@ public class RandomNumberVerticle extends AbstractVerticle {
 
                             return Completable.complete();
                         }
-                );
+                )
+                // FIXME: if this fails, we need to have a mechanism to prevent this verticle to keep requesting new blocks.
+                .subscribe(() -> LOGGER.debug("Wrote remaining requests ({}) to shared storage.", requests),
+                        throwable -> LOGGER.error("Unable to write remaining requests to shared storage!"));
 
-//        this.vertx
-//                .sharedData()
-//                .rxGetLock(REQUEST_COUNTER_LOCK)
-//                .doOnSuccess(lock -> LOGGER.debug("Obtained lock on {}.", lock.toString()))
-//                .flatMapCompletable(lock ->
-//                        this.getCreateSharedMap()
-//                                .flatMapCompletable(localMap -> {
-//                                    localMap.put("bitsLeft", bits);
-//                                    localMap.put("requestsLeft", requests);
-//                                    return Completable.complete();
-//                                })
-//                                .doFinally(lock::release));
     }
 
     private Single<LocalMap<String, Integer>> getCreateSharedMap() {
