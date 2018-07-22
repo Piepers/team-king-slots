@@ -21,6 +21,7 @@ public class Slot implements JsonDomainObject {
     private final Instant created;
     private final String player;
     private SlotStatus status;
+    private Reel reel;
 
     public Slot(JsonObject jsonObject) {
         this.id = SlotId.of(jsonObject.getString("id"));

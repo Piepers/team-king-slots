@@ -5,8 +5,17 @@ package me.piepers.king.domain;
  * are also stored on a {@link Reel} because a Reel maintains these cells.
  *
  * @author Bas Piepers
- *
  */
+public class ReelCell implements JsonDomainObject {
 
-public class ReelCell {
+    private int value;
+
+    public ReelCell(int value) {
+        this.value = value;
+    }
+
+    public int getValue() {
+        return value;
+    }
+
 }
