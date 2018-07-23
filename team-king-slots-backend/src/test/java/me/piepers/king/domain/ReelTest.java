@@ -1,10 +1,13 @@
 package me.piepers.king.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -106,21 +109,35 @@ public class ReelTest {
 
     @DataObject
     class DataObjectWithListOfList implements JsonDomainObject {
+        @JsonUnwrapped
         private final List<List<ReelCell>> rows;
 
         public DataObjectWithListOfList(JsonObject jsonObject) {
             JsonArray jsonArray = jsonObject.getJsonArray("data");
             this.rows = new ArrayList<>();
-//            jsonArray.getList().stream().map(row -> )
-
+            // Now we have an array with elements that contain another JsonArray
+            // FIXME: how to fix this in a way we don't have to explicitly cast raw types?
             jsonArray
                     .stream()
-                    .map(row -> (JsonArray)row)
-                    .forEach(row -> row
-                            .stream()
-                            .map(item -> (Integer) item)
-                            .map(i -> new ReelCell(i))
-                            .collect(Collectors.toList()));
+                    .forEach(o -> {
+                        List<ReelCell> row =
+                                ((JsonArray) o)
+                                        .stream()
+                                        .map(item -> new ReelCell((Integer) item))
+                                        .collect(Collectors.toList());
+                        rows.add(row);
+                    });
+
+//            jsonArray.getList().stream().map(row -> )
+
+//            jsonArray
+//                    .stream()
+//                    .map(row -> (JsonArray)row)
+//                    .forEach(row -> row
+//                            .stream()
+//                            .map(item -> (Integer) item)
+//                            .map(i -> new ReelCell(i))
+//                            .collect(Collectors.toList()));
 //            jsonArray.getList().stream().collect(() -> new ArrayList<List<ReelCell>>(), )
 //            jsonArray.getList().stream().peek(o -> System.out.println(o.getClass())).collect(Collector.of());
 //                    .forEach(o -> System.out.println(o));

@@ -18,4 +18,10 @@ public class ReelCell implements JsonDomainObject {
         return value;
     }
 
+    @Override
+    public String toString() {
+        return "ReelCell{" +
+                "value=" + value +
+                '}';
+    }
 }
