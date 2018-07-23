@@ -5,7 +5,11 @@ import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * The Reel class represents the reels part of a slot. The name is somewhat misleading as it is not one reel but the
@@ -13,34 +17,53 @@ import java.util.List;
  * reel which is randomly chosen. The main purpose of this class is to store the cells a slot has and offers a way to
  * calculate how many random numbers we need to request for one spin.
  * <p>
- * Currently the cells are represented by a 2D array which in principle for most slots is a array of cells where each
- * row contains the same amount of cells (columns).
- * <p>
- * It is, however, also possible that not each row in the cell has the same amount of columns for some slots. For now,
- * however, it offers only one constructor that creates a fixed symmetric grid of cells (with the given amount of rows
- * and columns).
+ * Currently the cells are represented by a List of a list of cells because Vert.x in unable to map a simple 2D array.
+ * Unlike a reel in a slot, the list of cells are horizontally oriented meaning they are read from left to right. Reels
+ * in a slot spin vertically but that is not relevant for the backend. The cells in the row can be empty to support
+ * slots that have a varying amount of cells per column.
  *
  * @author Bas Piepers
  */
 @DataObject
 public class Reel implements JsonDomainObject {
-    List<List<ReelCell>> rows;
-//    private final JsonArray rows;
-//    private final ReelCell[][] cells;
+    private final List<List<ReelCell>> cells;
 
     public Reel(JsonObject jsonObject) {
         JsonArray rows = jsonObject.getJsonArray("cells");
-//        this.cells = new ReelCell[1][1];
-//        this.cells = new ReelCell[rows.size()][];
-//        rows.stream()
-//        rows.stream().mapToInt(value -> )
-
-//        this.cells = Arrays.jsonObject.getJsonArray("cells");
+        // FIXME: how to fix this in a way we don't have to explicitly cast raw types?
+        List<List<ReelCell>> rcs = new ArrayList<>();
+        rows
+                .stream()
+                .forEach(o -> {
+                    List<ReelCell> row =
+                            ((JsonArray) o)
+                                    .stream()
+                                    .map(item -> ReelCell.of((Integer) item))
+                                    .collect(Collectors.toList());
+                    rcs.add(row);
+                });
+        this.cells = Collections.unmodifiableList(rcs);
     }
 
-    public Reel(int rows, int columns) {
-//        cells = new ReelCell[rows][columns];
+    /**
+     * Initialize a Reel with a certain amount of rows and columns. This constructor is there for convenience and
+     * supports a fixed amount of columns for each row only. What we are trying to achieve is to get an unmodifiable
+     * 2D list of {@link ReelCell} items.
+     *
+     * @param rows,    the amount of rows in the reel
+     * @param columns, the amount of columns in the reel
+     */
+    private Reel(int rows, int columns) {
+        ReelCell[][] cs = new ReelCell[rows][columns];
+        List<List<ReelCell>> rcs = new ArrayList<>();
+        for (int i = 0; i < cs.length; i++) {
+            rcs.add(Arrays.asList(cs[i]));
+        }
+        this.cells = Collections.unmodifiableList(rcs);
+    }
 
+    public static Reel of(int rows, int columns) {
+        return new Reel(rows, columns);
     }
 
     /**
@@ -51,12 +74,14 @@ public class Reel implements JsonDomainObject {
     @JsonIgnore
     public int getCellAmount() {
         // Done like this to accommodate for varying columns per row (counts columns per row).
-//        int amount = Arrays.stream(cells).mapToInt(value -> value.length).sum();
-//        return amount;
-        return 0;
+        return cells.stream().mapToInt(row -> row.size()).sum();
     }
 
-//    public ReelCell[][] getCells() {
+    public List<List<ReelCell>> getCells() {
+        return cells;
+    }
+
+    //    public ReelCell[][] getCells() {
 //        return this.cells;
 //    }
 }

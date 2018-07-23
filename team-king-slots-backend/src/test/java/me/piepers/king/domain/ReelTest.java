@@ -1,164 +1,85 @@
 package me.piepers.king.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-
-import io.vertx.codegen.annotations.DataObject;
-import io.vertx.codegen.annotations.GenIgnore;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
+import java.lang.reflect.Type;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ReelTest {
 
-//    @Test
-//    public void test_instantiation_of_reel() {
-//        Reel reel = new Reel(3, 5);
-    // For testing purpose fill the reel with some bogus random numbers:
-//        for(int i = 0; i< reel.getCells().length;i++) {
-//            int[] row = reel.getCells()[i];
-//            System.out.println("Amount of rows: " + row.length);
-//
-//        }
-//        int amount = reel.getCellAmount();
-//        System.out.println(amount);
-//        JsonObject test = JsonObject.mapFrom(reel);
-//        System.out.println(test.encodePrettily());
-//    }
-
     @Test
-    public void test_how_is_2d_json_mapped() {
-        String anotherJson = "[[\"1\",\"100\"],[\"2\",\"200\"],[\"3\",\"300\"]]";
-        String json = "{\"data\":[" +
+    public void test_that_2d_json_is_mapped_as_expected() {
+        String json = "{\"cells\":[" +
                 "[1,2,3]," +
                 "[3,4,5]," +
                 "[6,7,8]" +
                 "]}";
-        JsonArray jsonArray = new JsonArray(anotherJson);
         JsonObject jsonObject = new JsonObject(json);
-        System.out.println(jsonArray);
-        System.out.println(jsonObject);
-        JsonArray anotherJsonArray = jsonObject.getJsonArray("data");
-        anotherJsonArray
-                .stream()
-                .map(a -> (JsonArray) a)
-                .forEach(a -> {
-                    a.stream().forEach(i -> System.out.println(i));
-                });
-
-        TestDataObjectWithJsonArray test = new TestDataObjectWithJsonArray(jsonObject);
-        int[][] theArray = test.getArray();
-        Arrays
-                .stream(theArray)
-                .forEach(ar -> Arrays
-                        .stream(ar)
-                        .forEach(ia -> System.out.println("The mapped array is: " + ia)));
-
-        DataObjectWithListOfList anotherTest = new DataObjectWithListOfList(jsonObject);
-        System.out.println(anotherTest.toJson().encodePrettily());
-//        anotherTest
-//                .getRows()
-//                .stream()
-//                .peek(row -> System.out.println("Row peek: " + row))
-//                .forEach(row -> row
-//                        .stream()
-//                        .peek(reelCell -> System.out.println("Cell peek: " + reelCell))
-//                        .forEach(cell -> System.out.println(cell)));
-
-//        anotherTest
-//                .getRows()
-//                .stream()
-//                .forEach(cells -> cells
-//                        .stream()
-//                        .forEach(i ->
-//                                System.out.println("We have: " + i.getValue())));
-
+        Reel reel = new Reel(jsonObject);
+        assertThat(reel.getCells().size()).isEqualTo(3);
+        assertThat(reel.getCells().get(0)).isNotNull();
+        assertThat(reel.getCells().get(0).size()).isEqualTo(3);
+        assertThat(reel.getCells().get(1)).isNotNull();
+        assertThat(reel.getCells().get(1).size()).isEqualTo(3);
+        assertThat(reel.getCells().get(2)).isNotNull();
+        assertThat(reel.getCells().get(2).size()).isEqualTo(3);
+        int[][] expectedValues = {{1, 2, 3}, {3, 4, 5}, {6, 7, 8}};
+        assertExpectedValues(reel, expectedValues);
+        assertThat(reel.getCellAmount()).isEqualTo(9);
     }
 
-    @DataObject
-    class TestDataObjectWithJsonArray implements JsonDomainObject {
-        // Represents the 2D array of the grid.
-        private final JsonArray array;
+    @Test
+    public void test_that_uneven_rows_are_still_mapped_correctly() {
+        String json = "{\"cells\":[" +
+                "[20,31]," +
+                "[3,4,5,6]," +
+                "[18,19,20,21,22]" +
+                "]}";
+        JsonObject jsonObject = new JsonObject(json);
+        Reel reel = new Reel(jsonObject);
+        assertThat(reel.getCells().size()).isEqualTo(3);
+        assertThat(reel.getCells().get(0)).isNotNull();
+        assertThat(reel.getCells().get(0).size()).isEqualTo(2);
+        assertThat(reel.getCells().get(1)).isNotNull();
+        assertThat(reel.getCells().get(1).size()).isEqualTo(4);
+        assertThat(reel.getCells().get(2)).isNotNull();
+        assertThat(reel.getCells().get(2).size()).isEqualTo(5);
+        int[][] expectedValues = {{20, 31}, {3, 4, 5, 6}, {18, 19, 20, 21, 22}};
+        assertExpectedValues(reel, expectedValues);
 
-        public TestDataObjectWithJsonArray(JsonObject jsonObject) {
-            this.array = jsonObject.getJsonArray("data");
-        }
+        assertThat(reel.getCellAmount()).isEqualTo(11);
+    }
 
-        @JsonIgnore
-        @GenIgnore
-        public int[][] getArray() {
-            int[][] ar = new int[array.size()][];
-            for (int i = 0; i < array.size(); i++) {
-                JsonArray inner = array.getJsonArray(i);
-                int[] ip = new int[inner.size()];
-                for (int j = 0; j < inner.size(); j++) {
-                    ip[j] = inner.getInteger(j);
-                }
-                ar[i] = ip;
+    @Test
+    public void test_that_when_of_is_called_with_rows_and_columns_that_expected_reel_is_created() {
+        Reel reel = Reel.of(3, 4);
+        assertThat(reel).isNotNull();
+        assertThat(reel.getCells()).isNotNull();
+        assertThat(reel.getCells().size()).isEqualTo(3);
+        assertThat(reel.getCells().get(0)).isNotNull();
+        assertThat(reel.getCells().get(1)).isNotNull();
+        assertThat(reel.getCells().get(2)).isNotNull();
+        assertThat(reel.getCells().get(0).get(0)).isNull();
+        assertThat(reel.getCells().get(0).get(1)).isNull();
+        assertThat(reel.getCells().get(0).get(2)).isNull();
+        assertThat(reel.getCells().get(0).get(3)).isNull();
+        assertThatThrownBy(() -> reel.getCells().get(0).get(4)).isExactlyInstanceOf(ArrayIndexOutOfBoundsException.class);
+
+        assertThatThrownBy(() -> reel.getCells().get(3)).isExactlyInstanceOf(IndexOutOfBoundsException.class);
+        String expectedJson = "{\"cells\":[[null,null,null,null],[null,null,null,null],[null,null,null,null]]}";
+        assertThat(reel.toJson().encode()).isEqualTo(expectedJson);
+    }
+
+    private void assertExpectedValues(Reel reel, int[][] expectedValues) {
+        assertThat(reel.getCells()).isNotNull();
+        for (int i = 0; i < expectedValues.length; i++) {
+            int[] row = expectedValues[i];
+            for (int j = 0; j < row.length; j++) {
+                assertThat(reel.getCells().get(i).get(j)).isEqualToComparingOnlyGivenFields(ReelCell.of(row[j]), "value");
             }
-            return ar;
-        }
-    }
-
-    @DataObject
-    class DataObjectWithListOfList implements JsonDomainObject {
-        @JsonUnwrapped
-        private final List<List<ReelCell>> rows;
-
-        public DataObjectWithListOfList(JsonObject jsonObject) {
-            JsonArray jsonArray = jsonObject.getJsonArray("data");
-            this.rows = new ArrayList<>();
-            // Now we have an array with elements that contain another JsonArray
-            // FIXME: how to fix this in a way we don't have to explicitly cast raw types?
-            jsonArray
-                    .stream()
-                    .forEach(o -> {
-                        List<ReelCell> row =
-                                ((JsonArray) o)
-                                        .stream()
-                                        .map(item -> new ReelCell((Integer) item))
-                                        .collect(Collectors.toList());
-                        rows.add(row);
-                    });
-
-//            jsonArray.getList().stream().map(row -> )
-
-//            jsonArray
-//                    .stream()
-//                    .map(row -> (JsonArray)row)
-//                    .forEach(row -> row
-//                            .stream()
-//                            .map(item -> (Integer) item)
-//                            .map(i -> new ReelCell(i))
-//                            .collect(Collectors.toList()));
-//            jsonArray.getList().stream().collect(() -> new ArrayList<List<ReelCell>>(), )
-//            jsonArray.getList().stream().peek(o -> System.out.println(o.getClass())).collect(Collector.of());
-//                    .forEach(o -> System.out.println(o));
-//            jsonArray.getList().stream().collect(Collector.of(() -> new ArrayList<List<ReelCell>>(), (list1, list2)-> , ));
-//            jsonArray.getList().stream().collect(new ArrayList<List<ReelCell>>(), (o, o2) -> )
-//            jsonArray.<List<List<ReelCell>>>getList().stream().forEach();
-//            this.rows = null;
-//            jsonArray
-//                    .getList()
-//                    .stream()
-//                    .peek(o -> System.out.println("The object is: " + o + ", class: " + o.getClass()))
-
-//            this.rows = jsonArray.getList().stream().collect(Collectors.toList());
-//            jsonArray.getList().stream().forEach(o -> System.out.println("The object is now: " + o));
-//            this.rows = jsonArray.getList();
-//            this.array = jsonObject.getJsonArray("data");
-        }
-
-        public List<List<ReelCell>> getRows() {
-            return rows;
         }
     }
 }
-
