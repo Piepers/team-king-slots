@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @author Bas Piepers
  */
 // TODO: the value can be empty to accommodate for reels that have a varying amount of columns. So value needs to be changed to something that can represent that.
-public class ReelCell implements JsonDomainObject {
+public class ReelCell {
     @JsonValue
     private int value;
 
@@ -23,6 +23,10 @@ public class ReelCell implements JsonDomainObject {
 
     public int getValue() {
         return value;
+    }
+
+    public void setValue(int value) {
+        this.value = value;
     }
 
     @Override

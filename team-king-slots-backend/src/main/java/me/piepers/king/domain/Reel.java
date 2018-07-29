@@ -5,10 +5,8 @@ import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -32,13 +30,15 @@ public class Reel implements JsonDomainObject {
         JsonArray rows = jsonObject.getJsonArray("cells");
         // FIXME: how to fix this in a way we don't have to explicitly cast raw types?
         List<List<ReelCell>> rcs = new ArrayList<>();
+        // The rows may contain empty cells/null values.
         rows
                 .stream()
                 .forEach(o -> {
                     List<ReelCell> row =
                             ((JsonArray) o)
                                     .stream()
-                                    .map(item -> ReelCell.of((Integer) item))
+                                    // FIXME: better representation of null values would be nice.
+                                    .map(item -> Objects.isNull(item) ? null : ReelCell.of((Integer) item))
                                     .collect(Collectors.toList());
                     rcs.add(row);
                 });
@@ -48,7 +48,7 @@ public class Reel implements JsonDomainObject {
     /**
      * Initialize a Reel with a certain amount of rows and columns. This constructor is there for convenience and
      * supports a fixed amount of columns for each row only. What we are trying to achieve is to get an unmodifiable
-     * 2D list of {@link ReelCell} items.
+     * 2D list of {@link ReelCell} items. They are initialized with Cells that represent a 0 value.
      *
      * @param rows,    the amount of rows in the reel
      * @param columns, the amount of columns in the reel
@@ -57,11 +57,23 @@ public class Reel implements JsonDomainObject {
         ReelCell[][] cs = new ReelCell[rows][columns];
         List<List<ReelCell>> rcs = new ArrayList<>();
         for (int i = 0; i < cs.length; i++) {
+            ReelCell[] row = cs[i];
+            for (int j = 0; j < row.length; j++) {
+                row[j] = ReelCell.of(0);
+            }
+
             rcs.add(Arrays.asList(cs[i]));
         }
         this.cells = Collections.unmodifiableList(rcs);
     }
 
+    /**
+     * The factory method for the above convenience constructor.
+     *
+     * @param rows,    the (fixed) amount of rows of the reels.
+     * @param columns, the (fixed) amount of columns.
+     * @return in instance of {@link Reel} with 0 values for the cell.
+     */
     public static Reel of(int rows, int columns) {
         return new Reel(rows, columns);
     }
@@ -81,7 +93,32 @@ public class Reel implements JsonDomainObject {
         return cells;
     }
 
-    //    public ReelCell[][] getCells() {
-//        return this.cells;
-//    }
+    @Override
+    public JsonObject toJson() {
+        return new JsonObject().put("cells", new JsonArray(cells));
+    }
+
+    public Reel assignNumbersToReels(List<Integer> numbers) {
+        if (numbers.size() < this.getCellAmount()) {
+            throw new IllegalArgumentException("Expect the amount of numbers to be equal to the size of the reel");
+        }
+
+        AtomicInteger count = new AtomicInteger(0);
+
+        this.getCells()
+                .stream()
+                .forEach(row -> row
+                        .stream()
+                        .forEach(cell -> cell
+                                .setValue(numbers
+                                        .get(count.getAndIncrement()))));
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "Reel{" +
+                "cells=" + cells +
+                '}';
+    }
 }

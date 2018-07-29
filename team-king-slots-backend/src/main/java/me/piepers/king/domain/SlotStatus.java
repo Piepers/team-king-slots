@@ -1,13 +1,17 @@
 package me.piepers.king.domain;
 
 public enum SlotStatus {
-    IDLE, SPINNING;
+    INITIALIZED, IDLE, SPINNING;
 
     public static SlotStatus resolve(String from) {
-        if (from.equalsIgnoreCase("Spinning")) {
-            return SPINNING;
+        String localFrom = from.toUpperCase();
+        switch (localFrom) {
+            case "SPINNING":
+                return SPINNING;
+            case "INITIALIZED":
+                return INITIALIZED;
+            default:
+                return IDLE;
         }
-
-        return IDLE;
     }
 }

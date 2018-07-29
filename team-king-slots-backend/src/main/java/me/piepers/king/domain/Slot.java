@@ -20,8 +20,8 @@ public class Slot implements JsonDomainObject {
     private final Long score;
     private final Instant created;
     private final String player;
+    private final Reel reel;
     private SlotStatus status;
-    private Reel reel;
 
     public Slot(JsonObject jsonObject) {
         this.id = SlotId.of(jsonObject.getString("id"));
@@ -30,19 +30,36 @@ public class Slot implements JsonDomainObject {
         this.created = jsonObject.getInstant("created");
         this.player = jsonObject.getString("player");
         this.status = SlotStatus.resolve(jsonObject.getString("status"));
+        this.reel = new Reel(jsonObject.getJsonObject("reel"));
     }
 
-    public Slot(SlotId id, SlotStatus status, String name, Long score, Instant created, String player) {
+    private Slot(SlotId id, String name, Long score, Instant created, String player, Reel reel) {
         this.id = id;
-        this.status = status;
+        this.status = SlotStatus.INITIALIZED;
         this.name = name;
         this.score = score;
         this.created = created;
         this.player = player;
+        this.reel = reel;
+    }
+
+    /**
+     * Constructs a default slot implementation with a Reel of five columns and three rows.
+     */
+    public static Slot of(SlotType type, String player) {
+        switch (type) {
+            case CLASSIC:
+                return new Slot(SlotId.create(), "Classic", 0L, Instant.now(), player, Reel.of(3, 3));
+            case FIVE_BY_THREE:
+                return new Slot(SlotId.create(), "FiveByThree", 0L, Instant.now(), player, Reel.of(3, 5));
+            default:
+                throw new UnsupportedOperationException("Unsupported slot type.");
+        }
     }
 
     // BUSINESS LOGIC
     public Slot spin() {
+        // TODO: status validation: can's spin a slot that is already spinning etc.
         this.status = SlotStatus.SPINNING;
         return this;
     }
@@ -81,6 +98,15 @@ public class Slot implements JsonDomainObject {
         return status;
     }
 
+    public Reel getReel() {
+        return reel;
+    }
+
+    public void setStatus(SlotStatus status) {
+        this.status = status;
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -115,6 +141,7 @@ public class Slot implements JsonDomainObject {
                 ", score=" + score +
                 ", created=" + created +
                 ", player='" + player + '\'' +
+                ", reel=" + reel +
                 ", status=" + status +
                 '}';
     }

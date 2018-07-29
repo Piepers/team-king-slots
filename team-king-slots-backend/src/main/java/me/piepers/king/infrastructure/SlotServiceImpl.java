@@ -5,13 +5,12 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.serviceproxy.ServiceException;
 import me.piepers.king.domain.*;
 import me.piepers.king.reactivex.infrastructure.SlotRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.Instant;
 
 /**
  * The service that responds to requests pertaining to slot machines.
@@ -21,16 +20,17 @@ import java.time.Instant;
 public class SlotServiceImpl implements SlotService {
     private static final Logger LOGGER = LoggerFactory.getLogger(SlotServiceImpl.class);
     private final SlotRepository repository;
+    private final io.vertx.reactivex.core.Vertx rxVertx;
 
     public SlotServiceImpl(Vertx vertx) {
         this.repository = SlotRepository.createProxy(new io.vertx.reactivex.core.Vertx(vertx));
+        this.rxVertx = new io.vertx.reactivex.core.Vertx(vertx);
     }
 
     @Override
     public void start(Handler<AsyncResult<SlotId>> resultHandler) {
         // Instantiate a Slot
-        SlotId id = SlotId.create();
-        Slot slot = new Slot(id, SlotStatus.IDLE, "Free Slot " + id.getId(), 0L, Instant.now(), "John Doe");
+        Slot slot = Slot.of(SlotType.CLASSIC, "John Doe");
         repository
                 // Store it
                 .rxAdd(slot)
@@ -73,5 +73,12 @@ public class SlotServiceImpl implements SlotService {
                 .doOnSuccess(spinResult -> repository.rxSave(spinResult.getSlot()))
                 .subscribe(spinResult -> resultHandler.handle(Future.succeededFuture(spinResult)),
                         throwable -> resultHandler.handle(ServiceException.fail(503, throwable.getMessage())));
+    }
+
+    private Single<Reel> getRandomNumbersForReel(Reel reel) {
+        return this.rxVertx
+                .eventBus()
+                .<JsonObject>rxSend("get.numbers", new JsonObject().put("amount", reel.getCellAmount()))
+                .flatMap(message -> Single.just(reel.assignNumbersToReels(message.body().getJsonArray("numbers").getList())));
     }
 }

@@ -44,9 +44,9 @@ public interface SlotService {
     void quit(String uuid, Handler<AsyncResult<Void>> resultHandler);
 
     /**
-     * Simulates spinning the wheels on a slot with the given id. Returns the slot so that the front-end may do
-     * something with the contents. For example: in the future it may be possible to stop one of the reels of the slot
-     * instead of all of them.
+     * Simulates spinning the wheels on a slot with the given id. Currently spinning a slot is merely an act of setting
+     * a status on the slot to indicate that it is spinning and sets the paylines and the credits a user wants to play
+     * with for this turn.
      *
      * @param uuid, the id of the slot.
      * @param resultHandler, contains the slot that was just triggered or an error in case the given id doesn't exist.
@@ -54,9 +54,9 @@ public interface SlotService {
     void spin(String uuid, Handler<AsyncResult<Slot>> resultHandler);
 
     /**
-     * Stops spinning the reels manually. This is also done with a timer automatically but a user can also stop the
-     * spin. At the moment the service is only capable of stopping all the slots but later on it may be
-     * possible to stop just one or a sub-set of the reels that are spinning.
+     * Stops spinning the reels. This also invokes the necessary services to obtain random numbers for the cells in the
+     * reels and calculate the win for the user based on the paylines and the credits the user has set.
+     *
      * @param uuid, the id of the slot to stop the reels.
      * @param resultHandler, contains the Slot that was stopped with the score or an error in case the slot was not
      *                       found or in case the reels were not spinning.

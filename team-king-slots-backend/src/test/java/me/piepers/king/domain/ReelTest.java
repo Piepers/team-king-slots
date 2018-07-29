@@ -3,8 +3,6 @@ package me.piepers.king.domain;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Type;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -51,6 +49,7 @@ public class ReelTest {
         assertExpectedValues(reel, expectedValues);
 
         assertThat(reel.getCellAmount()).isEqualTo(11);
+
     }
 
     @Test
@@ -62,14 +61,14 @@ public class ReelTest {
         assertThat(reel.getCells().get(0)).isNotNull();
         assertThat(reel.getCells().get(1)).isNotNull();
         assertThat(reel.getCells().get(2)).isNotNull();
-        assertThat(reel.getCells().get(0).get(0)).isNull();
-        assertThat(reel.getCells().get(0).get(1)).isNull();
-        assertThat(reel.getCells().get(0).get(2)).isNull();
-        assertThat(reel.getCells().get(0).get(3)).isNull();
+        assertThat(reel.getCells().get(0).get(0).getValue()).isEqualTo(0);
+        assertThat(reel.getCells().get(0).get(1).getValue()).isEqualTo(0);
+        assertThat(reel.getCells().get(0).get(2).getValue()).isEqualTo(0);
+        assertThat(reel.getCells().get(0).get(3).getValue()).isEqualTo(0);
         assertThatThrownBy(() -> reel.getCells().get(0).get(4)).isExactlyInstanceOf(ArrayIndexOutOfBoundsException.class);
 
         assertThatThrownBy(() -> reel.getCells().get(3)).isExactlyInstanceOf(IndexOutOfBoundsException.class);
-        String expectedJson = "{\"cells\":[[null,null,null,null],[null,null,null,null],[null,null,null,null]]}";
+        String expectedJson = "{\"cells\":[[0,0,0,0],[0,0,0,0],[0,0,0,0]]}";
         assertThat(reel.toJson().encode()).isEqualTo(expectedJson);
     }
 
