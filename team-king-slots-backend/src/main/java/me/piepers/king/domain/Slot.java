@@ -1,10 +1,12 @@
 package me.piepers.king.domain;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import io.reactivex.Single;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Slot domain model object that stores the state of a slot
@@ -59,17 +61,29 @@ public class Slot implements JsonDomainObject {
 
     // BUSINESS LOGIC
     public Slot spin() {
-        // TODO: status validation: can's spin a slot that is already spinning etc.
-        this.status = SlotStatus.SPINNING;
+        if (this.status == SlotStatus.SPINNING) {
+            throw new IllegalStateException("The slot is already spinning.");
+        } else {
+            this.status = SlotStatus.SPINNING;
+        }
         return this;
     }
 
-    public SpinResult stop() {
+    // FIXME: it would be better if the cells of the reels are triggered to request a random number themselves rather than having the slot trigger that and assign the numbers.
+    public Single<SpinResult> stop(RandomNumberFetcher randomNumberFetcher) {
+        // Check if the status is appropriate to stop the reels on this instance.
         if (this.status == SlotStatus.SPINNING) {
+
             this.status = SlotStatus.IDLE;
-            return SpinResult.create(this);
+
+            return randomNumberFetcher
+                    .fetch(this)
+                    .flatMap(numbers -> Single
+                            .just(this.reel
+                                    .assignNumbersToReels(numbers)))
+                    .flatMap(reel -> Single.just(SpinResult.create(this)));
         } else {
-            throw new IllegalStateException("This slot machine is not spinning and can therefore not be stopped.");
+            return Single.error(new IllegalStateException("This slot machine is not spinning and can therefore not be stopped."));
         }
     }
 
@@ -144,5 +158,10 @@ public class Slot implements JsonDomainObject {
                 ", reel=" + reel +
                 ", status=" + status +
                 '}';
+    }
+
+    @FunctionalInterface
+    public interface RandomNumberFetcher {
+        Single<List<Integer>> fetch(Slot slot);
     }
 }

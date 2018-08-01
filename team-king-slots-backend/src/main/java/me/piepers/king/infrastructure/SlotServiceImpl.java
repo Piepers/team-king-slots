@@ -12,6 +12,8 @@ import me.piepers.king.reactivex.infrastructure.SlotRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 /**
  * The service that responds to requests pertaining to slot machines.
  *
@@ -23,8 +25,8 @@ public class SlotServiceImpl implements SlotService {
     private final io.vertx.reactivex.core.Vertx rxVertx;
 
     public SlotServiceImpl(Vertx vertx) {
-        this.repository = SlotRepository.createProxy(new io.vertx.reactivex.core.Vertx(vertx));
         this.rxVertx = new io.vertx.reactivex.core.Vertx(vertx);
+        this.repository = SlotRepository.createProxy(rxVertx);
     }
 
     @Override
@@ -69,16 +71,29 @@ public class SlotServiceImpl implements SlotService {
     public void stop(String uuid, Handler<AsyncResult<SpinResult>> resultHandler) {
         repository
                 .rxFindById(uuid)
-                .flatMap(slot -> Single.just(slot.stop()))
-                .doOnSuccess(spinResult -> repository.rxSave(spinResult.getSlot()))
+                .doOnSuccess(slot -> LOGGER.debug("Obtained slot from repo: {}", slot.toJson().encodePrettily()))
+                // We need some kind of status check here to prevent us from wasting random numbers.
+                .flatMap(slot -> slot.stop(this::getNumbersForReel))
+                .doOnSuccess(spinResult -> {
+                    LOGGER.debug("Updating slot {}", spinResult.getSlot().toJson().encodePrettily());
+                    repository
+                            .rxSave(spinResult.getSlot())
+                            .subscribe();
+                })
                 .subscribe(spinResult -> resultHandler.handle(Future.succeededFuture(spinResult)),
                         throwable -> resultHandler.handle(ServiceException.fail(503, throwable.getMessage())));
     }
 
-    private Single<Reel> getRandomNumbersForReel(Reel reel) {
+
+    private Single<List<Integer>> getNumbersForReel(Slot slot) {
         return this.rxVertx
                 .eventBus()
-                .<JsonObject>rxSend("get.numbers", new JsonObject().put("amount", reel.getCellAmount()))
-                .flatMap(message -> Single.just(reel.assignNumbersToReels(message.body().getJsonArray("numbers").getList())));
+                .<JsonObject>rxSend("get.numbers", new JsonObject()
+                        .put("amount", slot.getReel().getCellAmount()))
+                .flatMap(message -> Single
+                        .just((List<Integer>)message
+                                .body()
+                                .getJsonArray("numbers")
+                                .getList()));
     }
 }

@@ -7,6 +7,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import me.piepers.king.domain.Slot;
 
+import java.util.List;
+
 /**
  * A repository that stores the slot machines that are currently active.
  *
@@ -53,8 +55,10 @@ public interface SlotRepository {
 
     /**
      * Retrieves a {@link Slot} by its id.
-     * @param uuid, the unique identifier of the {@link Slot}.
+     *
+     * @param uuid,          the unique identifier of the {@link Slot}.
      * @param resultHandler, contains the {@link Slot} in case it was found.
      */
     void findById(String uuid, Handler<AsyncResult<Slot>> resultHandler);
+
 }

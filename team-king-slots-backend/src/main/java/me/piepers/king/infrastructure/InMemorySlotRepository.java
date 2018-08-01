@@ -47,8 +47,17 @@ public class InMemorySlotRepository implements SlotRepository {
 
     @Override
     public void save(Slot slot, Handler<AsyncResult<Slot>> resultHandler) {
+        LOGGER.debug("Updating slot in repository with id: {}", slot.getId().getId());
+
         // TODO: probably good to at least validate if an id is present.
-        slots.put(slot.getId(), slot);
+        Slot previousValue = slots.put(slot.getId(), slot);
+
+        if (Objects.nonNull(previousValue)) {
+            LOGGER.debug("Replaced:\n{} \nwith:\n{}", previousValue.toJson().encodePrettily(), slot.toJson().encodePrettily());
+        } else {
+            LOGGER.debug("New slot saved:\n", slot.toJson().encodePrettily());
+        }
+
         resultHandler.handle(Future.succeededFuture(slots.get(slot.getId())));
     }
 
@@ -81,4 +90,5 @@ public class InMemorySlotRepository implements SlotRepository {
             }
         }
     }
+
 }

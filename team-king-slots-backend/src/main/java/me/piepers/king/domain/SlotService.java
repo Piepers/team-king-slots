@@ -7,6 +7,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import me.piepers.king.infrastructure.SlotServiceImpl;
 
+import java.util.List;
+
 
 /**
  * Main service that handles slot related logic.
@@ -62,4 +64,5 @@ public interface SlotService {
      *                       found or in case the reels were not spinning.
      */
     void stop(String uuid, Handler<AsyncResult<SpinResult>> resultHandler);
+
 }

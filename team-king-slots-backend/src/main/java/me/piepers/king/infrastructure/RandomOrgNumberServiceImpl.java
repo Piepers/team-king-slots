@@ -32,7 +32,7 @@ public class RandomOrgNumberServiceImpl implements RandomNumberService {
     private final io.vertx.reactivex.core.Vertx rxVertx;
 
     public RandomOrgNumberServiceImpl(Vertx vertx, JsonObject configuration) throws Exception {
-        rxVertx = new io.vertx.reactivex.core.Vertx(vertx);
+        this.rxVertx = new io.vertx.reactivex.core.Vertx(vertx);
 
         // Fixme: why am I not getting the configuration I added to the context earlier?
         LOGGER.debug("The config in the service is: " + vertx.getOrCreateContext().config());

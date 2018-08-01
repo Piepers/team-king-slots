@@ -64,11 +64,11 @@ public class HttpServerVerticle extends AbstractVerticle {
         // Rest endpoints in a subrouter
         Router subRouter = Router.router(vertx);
         subRouter.route(HttpMethod.GET, "/start").handler(this::startHandler);
+        subRouter.route(HttpMethod.GET, "/slot/:slotId").handler(this::getSlotHandler);
         subRouter.route(HttpMethod.PUT, "/quit/:slotId").handler(this::quitHandler);
         subRouter.route(HttpMethod.POST, "/spin/:slotId").handler(this::spinHandler);
-        subRouter.route(HttpMethod.POST, "/stop/:slotId").handler(this::stopHandler);
-        subRouter.route(HttpMethod.GET, "/random/:amount").handler(this::randomNumberHandler);
-
+        subRouter.route(HttpMethod.PUT, "/stop/:slotId").handler(this::stopHandler);
+//        subRouter.route(HttpMethod.GET, "/random/:amount").handler(this::randomNumberHandler);
         router.mountSubRouter("/api", subRouter);
 
         // Start the server
@@ -85,6 +85,12 @@ public class HttpServerVerticle extends AbstractVerticle {
                 });
     }
 
+    private void getSlotHandler(RoutingContext routingContext) {
+        LOGGER.debug("Invoking get end-point");
+
+    }
+
+
     private void startHandler(RoutingContext routingContext) {
         LOGGER.debug("Invoking start end-point");
 
@@ -92,11 +98,7 @@ public class HttpServerVerticle extends AbstractVerticle {
                 .rxStart()
                 .subscribe(slotId -> {
                     LOGGER.debug("Started slot. Received id: {}", slotId);
-                    routingContext
-                            .response()
-                            .setStatusCode(200)
-                            .putHeader("Content-Type", "application/json; charset=UTF-8")
-                            .end(slotId.toJson().encode(), StandardCharsets.UTF_8.name());
+                    this.jsonResponse(routingContext, slotId.toJson());
                 }, throwable -> {
                     LOGGER.error("An error occurred while trying to start a new Slot.", throwable.getMessage());
                     routingContext
@@ -125,17 +127,16 @@ public class HttpServerVerticle extends AbstractVerticle {
                     .rxQuit(id)
                     .subscribe(() -> {
                         LOGGER.debug("Quit Slot with id {}", id);
-                        routingContext
-                                .response()
-                                .setStatusCode(200)
-                                .end();
+                        this.ok(routingContext);
                     }, throwable -> {
                         LOGGER.error("An error occured while trying to stop slot with id {}", id);
                         routingContext
                                 .response()
                                 .setStatusCode(503)
                                 .putHeader("Content-Type", "application/json; charset=UTF-8")
-                                .end(new JsonObject().put("Error", throwable.getMessage()).encode(), StandardCharsets.UTF_8.name());
+                                .end(new JsonObject()
+                                        .put("Error", throwable.getMessage())
+                                        .encode(), StandardCharsets.UTF_8.name());
                     });
         }
     }
@@ -153,8 +154,7 @@ public class HttpServerVerticle extends AbstractVerticle {
             slotService.rxSpin(id)
                     .subscribe(spinResult -> {
                         LOGGER.debug("Spinresult is {}", spinResult.toString());
-                        routingContext.response().putHeader("Content-Type", "application/json; charset=UTF-8")
-                                .end(spinResult.toJson().encode(), StandardCharsets.UTF_8.name());
+                       this.jsonResponse(routingContext, spinResult.toJson());
                     }, throwable -> {
                         LOGGER.error("Error while trying to invoke \"spin\".", throwable);
                         routingContext
@@ -168,7 +168,7 @@ public class HttpServerVerticle extends AbstractVerticle {
     }
 
     private void stopHandler(RoutingContext routingContext) {
-        LOGGER.debug("Invoking sop end-point");
+        LOGGER.debug("Invoking stop end-point");
 
         String id = routingContext.request().getParam("slotId");
         if (Objects.isNull(id)) {
@@ -181,10 +181,7 @@ public class HttpServerVerticle extends AbstractVerticle {
                     .rxStop(id)
                     .subscribe(slot -> {
                         LOGGER.debug("Stopped spinning for id {}", id);
-                        routingContext
-                                .response()
-                                .putHeader("Content-Type", "application/json; charset=UTF-8")
-                                .end(slot.toJson().encode(), StandardCharsets.UTF_8.name());
+                        this.jsonResponse(routingContext, slot.toJson());
                     }, throwable -> {
                         LOGGER.error("Failure while trying to stop spinning.", throwable);
                         routingContext
@@ -195,6 +192,23 @@ public class HttpServerVerticle extends AbstractVerticle {
                                         .encode(), StandardCharsets.UTF_8.name());
                     });
         }
+    }
+
+    private void ok(RoutingContext routingContext) {
+        this.jsonResponse(routingContext, null);
+    }
+
+    private void jsonResponse(RoutingContext routingContext, JsonObject jsonObject) {
+        JsonObject response = jsonObject;
+        if (Objects.isNull(response)) {
+            response = this.genericOkResponse();
+        }
+
+        routingContext.response().setStatusCode(200).putHeader("Content-Type", "application/json; charset=UTF-8").end(response.encode(), StandardCharsets.UTF_8.name());
+    }
+
+    private JsonObject genericOkResponse() {
+        return new JsonObject().put("message", "ok");
     }
 
     // TODO: temporary endpoint for testing purposes.
