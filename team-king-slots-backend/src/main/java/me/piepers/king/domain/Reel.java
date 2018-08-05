@@ -19,15 +19,28 @@ import java.util.stream.Collectors;
  * Unlike a reel in a slot, the list of cells are horizontally oriented meaning they are read from left to right. Reels
  * in a slot spin vertically but that is not relevant for the backend. The cells in the row can be empty to support
  * slots that have a varying amount of cells per column.
+ * <p>
+ * A Reel has a collection of {@link Payline} objects that are used in this reel to calculate the wins for spins.
+ * Paylines are created with coordinates that dictate how a line runs from left to right (right to left and vertical
+ * lines are not yet supported). A Reel validates that only one payline with a particular reference number and
+ * coordinates exist and that the paylines do not reference non-existent cells. While the reel is active, paylines
+ * can be made active or un-active. Paylines can only be added on construction. A reel must always have at least one
+ * payline.
+ * <p>
+ * The reel uses an algorithm (depth-first-search or DFS) to calculate the winnings per spin.
+ * <p>
+ * Also see javadoc for {@link Payline}
  *
  * @author Bas Piepers
  */
 @DataObject
 public class Reel implements JsonDomainObject {
     private final List<List<ReelCell>> cells;
+    private Set<Payline> payLines;
 
     public Reel(JsonObject jsonObject) {
         JsonArray rows = jsonObject.getJsonArray("cells");
+
         // FIXME: how to fix this in a way we don't have to explicitly cast raw types?
         List<List<ReelCell>> rcs = new ArrayList<>();
         // The rows may contain empty cells/null values.
@@ -43,6 +56,12 @@ public class Reel implements JsonDomainObject {
                     rcs.add(row);
                 });
         this.cells = Collections.unmodifiableList(rcs);
+
+        JsonArray lines = jsonObject.getJsonArray("payLines");
+        // Paylines are in principle optional although a slot machine without paylines is not useful.
+        if(Objects.nonNull(lines)) {
+            this.payLines = lines.stream().map(jo -> new Payline((JsonObject) jo)).collect(Collectors.toSet());
+        }
     }
 
     /**
@@ -91,6 +110,32 @@ public class Reel implements JsonDomainObject {
 
     public List<List<ReelCell>> getCells() {
         return cells;
+    }
+
+    public Set<Payline> getPayLines() {
+        return payLines;
+    }
+
+    public Reel addPayline(int reference, int[] coordinates) {
+        Payline p = Payline.of(reference, coordinates, 0);
+        if (!this.hasPayline(p) && this.payLineInGrid(coordinates)) {
+            this.payLines.add(p);
+        } else {
+            throw new IllegalArgumentException("This payline is either not valid or already exists.");
+        }
+        return this;
+    }
+
+    // Must completely fit in the grid from start to finish
+    private boolean payLineInGrid(int[] coordinates) {
+        Objects.requireNonNull(coordinates);
+        // For every coordinate:
+        // TODO
+        return false;
+    }
+
+    private boolean hasPayline(Payline p) {
+        return this.payLines.contains(p);
     }
 
     @Override

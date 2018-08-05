@@ -23,14 +23,14 @@ import java.util.Objects;
  * <p>
  * The coordinates represent how the payline runs from left to right. In principle, a payline can have every
  * orientation on the reel (left to right, right to left, top to bottom, bottom to top) although typically
- * a payline in a normal machine only run from left to right. In this version of the application, paylines are indeed
+ * a payline in a normal machine only runs from left to right. In this version of the application, paylines are indeed
  * left to right oriented so coordinates are always evaluated that way. Eg. 1, 2, 3, 4, 5 for a reel with five columns
  * and five rows would mean a line that runs from ([x-y]) 1-1, 2-2, 3-3, 4-4, 5-5 (so a diagonal line).
  * Or: 1, 2, 1, 1 would be 1-1, 2-2, 3-1, 4-1.
  * <p>
- * Where the payline starts on the reel is dependent on the reel's layout. If the reel has a layout with missing cells,
- * for example at the beginning of a row, the payline is positioned appropriately. For example a reel that has the
- * following layout:
+ * A payline ALWAYS starts on the first possible cell in a row. If the reel has a layout with missing cells,
+ * for example at the beginning of a row, the payline must start on a cell that is present in a column that has one
+ * or more missing cells. For example a reel that has the following layout:
  * <p>
  * **_____
  * **| | |
@@ -41,11 +41,12 @@ import java.util.Objects;
  * **-----
  * <p>
  * (so with 4 columns and the middle columns have 2 more rows, one at the top and one at the bottom). Then a payline of
- * 1, 1  is considered to span (x):
+ * that is left-to-rigt oriented can never start with 1. For example: 1, 1, 1, 1 in the above example is invalid.
+ * Coordinates of 2, 1, 1, 2 are valid, however:
  * **_____
  * **|x|x|
  * ---------
- * | | | | |
+ * |x| | |x|
  * | | | | |
  * --| | |--
  * **-----
@@ -53,12 +54,13 @@ import java.util.Objects;
  * A payline spans the entire row (although part of a payline can be won if some of the images are equal).
  * <p>
  * <p>
- * 1, 1, 1 would, for example, be an invalid payline (although the Payline class does not know that). What the
- * orientation of a payline is, exactly, is the responsibility of the reel that calculates the score. 1, 2, 3 would be:
+ * 2, 1, 1 would, for example, be an invalid payline (although the Payline class does not know that). What the
+ * orientation of a payline is, exactly, is the responsibility of the reel that calculates the score. 2, 1, 2, 3 would
+ * be:
  * <p>
  * **|x| |
  * ---------
- * | | |x| |
+ * |x| |x| |
  * | | | |x|
  * --| | |--
  * **-----
@@ -144,6 +146,16 @@ public class Payline implements JsonDomainObject {
         result = 31 * result + coordinates.hashCode();
         result = 31 * result + (active ? 1 : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Payline{" +
+                "reference=" + reference +
+                ", coordinates=" + coordinates +
+                ", active=" + active +
+                ", bet=" + bet +
+                '}';
     }
 
     public int getReference() {

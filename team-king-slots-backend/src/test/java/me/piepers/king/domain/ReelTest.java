@@ -72,6 +72,33 @@ public class ReelTest {
         assertThat(reel.toJson().encode()).isEqualTo(expectedJson);
     }
 
+    @Test
+    public void test_that_paylines_are_mapped_as_expected() {
+        String json = "{\n" +
+                "\"cells\": [\n" +
+                "[0, 0, 0, 0, 0],\n" +
+                "[0, 0, 0, 0, 0],\n" +
+                "[0, 0, 0, 0, 0]\n" +
+                "],\n" +
+                "\"payLines\": [{\n" +
+                "\"reference\": 1,\n" +
+                "\"coordinates\": [0, 0, 0, 0, 0],\n" +
+                "\"active\": true,\n" +
+                "\"bet\": 1\n" +
+                "}, {\n" +
+                "\"reference\": 2,\n" +
+                "\"coordinates\": [0, 1, 3, 4, 1],\n" +
+                "\"active\": false,\n" +
+                "\"bet\": 1\n" +
+                "}]\n" +
+                "}";
+
+        Reel reel = new Reel(new JsonObject(json));
+        assertThat(reel.getCells().size()).isEqualTo(3);
+        assertThat(reel.getPayLines().size()).isEqualTo(2);
+        System.out.println(reel.getCells().size() + " " + reel.getCells().size());
+    }
+
     private void assertExpectedValues(Reel reel, int[][] expectedValues) {
         assertThat(reel.getCells()).isNotNull();
         for (int i = 0; i < expectedValues.length; i++) {
