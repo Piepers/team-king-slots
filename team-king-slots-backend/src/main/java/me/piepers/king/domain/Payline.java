@@ -1,9 +1,179 @@
 package me.piepers.king.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.annotations.GenIgnore;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
- * A Payline is a responsible for collecting a sequence of symbols and determining their equality.
+ * Paylines represent the structure of the paylines for a particular slot. The score is calculated based on these
+ * paylines using DFS (depth-first-search).
+ * <p>
+ * For inspiration of a relatively complex set of paylines, see:
+ * <p>
+ * https://www.casinosonline.com/wp-content/uploads/2013/12/lions-pride-slot-free-pay-lines.jpg
+ * <p>
+ * The payline has a field called "reference" which is just a number to represent it in the front-end to show how the
+ * line runs. "1", for example, is typically a straight line that runs from left to right in the middle of the reels.
+ * Per reel, there can only be one Payline with a particular reference number.
+ * <p>
+ * The coordinates represent how the payline runs from left to right. In principle, a payline can have every
+ * orientation on the reel (left to right, right to left, top to bottom, bottom to top) although typically
+ * a payline in a normal machine only run from left to right. In this version of the application, paylines are indeed
+ * left to right oriented so coordinates are always evaluated that way. Eg. 1, 2, 3, 4, 5 for a reel with five columns
+ * and five rows would mean a line that runs from ([x-y]) 1-1, 2-2, 3-3, 4-4, 5-5 (so a diagonal line).
+ * Or: 1, 2, 1, 1 would be 1-1, 2-2, 3-1, 4-1.
+ * <p>
+ * Where the payline starts on the reel is dependent on the reel's layout. If the reel has a layout with missing cells,
+ * for example at the beginning of a row, the payline is positioned appropriately. For example a reel that has the
+ * following layout:
+ * <p>
+ * **_____
+ * **| | |
+ * ---------
+ * | | | | |
+ * | | | | |
+ * --| | |--
+ * **-----
+ * <p>
+ * (so with 4 columns and the middle columns have 2 more rows, one at the top and one at the bottom). Then a payline of
+ * 1, 1  is considered to span (x):
+ * **_____
+ * **|x|x|
+ * ---------
+ * | | | | |
+ * | | | | |
+ * --| | |--
+ * **-----
+ * <p>
+ * A payline spans the entire row (although part of a payline can be won if some of the images are equal).
+ * <p>
+ * <p>
+ * 1, 1, 1 would, for example, be an invalid payline (although the Payline class does not know that). What the
+ * orientation of a payline is, exactly, is the responsibility of the reel that calculates the score. 1, 2, 3 would be:
+ * <p>
+ * **|x| |
+ * ---------
+ * | | |x| |
+ * | | | |x|
+ * --| | |--
+ * **-----
+ * <p>
+ * <p>
+ * A {@link Reel} typically validates if a payline is unique within that reel based on the reference and the
+ * coordinates. It is also the job of the {@link Reel} to validate that the coordinates represent a cell in the reel.
+ * <p>
+ * A payline also gets the "bet" that the player used in that spin but the payline does not validate if the player
+ * has enough credits to make the bet. It is stored here to calculate the win for a spin. This can (and typically)
+ * changes per spin. Some slots have one bet value that is valid for all active paylines but some slot allow users to
+ * bet on each payline individually.
+ * <p>
+ * The active flag,  determines of the payline is active.  This is also a setting a player can configure
+ * while playing. A "bet" does not signify the value it represents. This can be one cent or one euro, dollar or
+ * whatever.
  *
  * @author Bas Piepers
  */
-public class Payline {
+@DataObject
+public class Payline implements JsonDomainObject {
+    private final int reference;
+    private final JsonArray coordinates;
+    private boolean active;
+    private int bet;
+
+    public Payline(JsonObject jsonObject) {
+        this.reference = jsonObject.getInteger("reference");
+        this.coordinates = jsonObject.getJsonArray("coordinates");
+        this.active = jsonObject.getBoolean("active");
+        this.bet = jsonObject.getInteger("bet");
+    }
+
+    private Payline(int reference, JsonArray coordinates, boolean active, int bet) {
+        this.reference = reference;
+        this.coordinates = coordinates;
+        this.active = active;
+        this.validateCoordinates();
+    }
+
+    private Payline(int reference, int[] coordinates, boolean active, int bet) {
+        this.reference = reference;
+        this.coordinates = new JsonArray(Arrays.asList(coordinates));
+        this.active = active;
+        this.validateCoordinates();
+    }
+
+    private void validateCoordinates() {
+        if (Objects.isNull(this.coordinates) || this.coordinates.size() == 0 || Objects.isNull(this.coordinates.getInteger(0))) {
+            throw new IllegalStateException("Coordinates should at least be present.");
+        }
+
+        for (int i = 0; i < this.coordinates.size(); i++) {
+            if (i != 0 && (i > 0 && this.coordinates.getInteger(i) < this.coordinates.getInteger(i - 1))) {
+                throw new IllegalStateException("The coordinates in the reel must have successive or equal values.");
+            }
+        }
+    }
+
+    public static Payline of(int reference, int[] coordinates, int bet) {
+        return new Payline(reference, coordinates, false, bet);
+    }
+
+    public static Payline of(int reference, int[] coordinates, boolean active, int bet) {
+        return new Payline(reference, coordinates, active, bet);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Payline payline = (Payline) o;
+
+        if (reference != payline.reference) return false;
+        if (active != payline.active) return false;
+        return coordinates.equals(payline.coordinates);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = reference;
+        result = 31 * result + coordinates.hashCode();
+        result = 31 * result + (active ? 1 : 0);
+        return result;
+    }
+
+    public int getReference() {
+        return reference;
+    }
+
+    public JsonArray getCoordinates() {
+        return coordinates;
+    }
+
+    // For convenience.
+    @JsonIgnore
+    @GenIgnore
+    public int[] getCoordsAsArray() {
+        return this.coordinates.stream().mapToInt(coordinate -> (Integer) coordinate).toArray();
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public int getBet() {
+        return bet;
+    }
+
+    public void setBet(int bet) {
+        this.bet = bet;
+    }
 }

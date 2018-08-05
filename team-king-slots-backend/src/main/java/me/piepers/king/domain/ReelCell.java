@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  *
  * @author Bas Piepers
  */
-// TODO: the value can be empty to accommodate for reels that have a varying amount of columns. So value needs to be changed to something that can represent that.
+// TODO: value has a 0 value in case this cell represents an empty cell (to accommodate for variable lengths for columns).
 public class ReelCell {
     @JsonValue
     private int value;

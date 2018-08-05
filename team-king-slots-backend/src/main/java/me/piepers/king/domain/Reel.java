@@ -11,11 +11,11 @@ import java.util.stream.Collectors;
 
 /**
  * The Reel class represents the reels part of a slot. The name is somewhat misleading as it is not one reel but the
- * collection of cells on the reels of a slot. It represents a Grid of cells and the cells represent an image on the
+ * collection of cells on the reels of a slot. Cells represent a grid of cells and the cells represent an image on the
  * reel which is randomly chosen. The main purpose of this class is to store the cells a slot has and offers a way to
  * calculate how many random numbers we need to request for one spin.
  * <p>
- * Currently the cells are represented by a List of a list of cells because Vert.x in unable to map a simple 2D array.
+ * Currently the cells are represented by a List of a list of cells because Vert.x is unable to map a simple 2D array.
  * Unlike a reel in a slot, the list of cells are horizontally oriented meaning they are read from left to right. Reels
  * in a slot spin vertically but that is not relevant for the backend. The cells in the row can be empty to support
  * slots that have a varying amount of cells per column.
