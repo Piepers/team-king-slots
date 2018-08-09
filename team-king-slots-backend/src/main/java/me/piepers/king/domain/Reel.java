@@ -36,6 +36,10 @@ public class Reel implements JsonDomainObject {
     private final List<List<ReelCell>> cells;
     private Set<Payline> payLines;
 
+    ////////////////////////////////////////////////////////////////////////////
+    //////////////Constructors and factory methods/////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+
     public Reel(JsonObject jsonObject) {
         JsonArray rows = jsonObject.getJsonArray("cells");
 
@@ -96,25 +100,9 @@ public class Reel implements JsonDomainObject {
         return new Reel(rows, columns);
     }
 
-    /**
-     * To be able to ascertain how many cells we have to help determine how many random numbers we need.
-     * Note: varying column sizes are not supported yet.
-     *
-     * @return the amount of cells we have for this reel.
-     */
-    @JsonIgnore
-    public int getCellAmount() {
-        // Done like this to accommodate for varying columns per row (counts columns per row).
-        return cells.stream().mapToInt(row -> row.size()).sum();
-    }
-
-    public List<List<ReelCell>> getCells() {
-        return cells;
-    }
-
-    public Set<Payline> getPayLines() {
-        return payLines;
-    }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////// Business logic //////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
     public Reel addPayline(int reference, Integer[] coordinates) {
@@ -182,6 +170,10 @@ public class Reel implements JsonDomainObject {
         return this;
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////// Accessors ///////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public int getColSize() {
         return Objects.nonNull(this.cells) && Objects.nonNull(this.cells.get(0)) ? this.cells.get(0).size() : 0;
     }
@@ -190,6 +182,29 @@ public class Reel implements JsonDomainObject {
         return Objects.nonNull(this.getCells()) ? this.getCells().size() : 0;
     }
 
+    /**
+     * To be able to ascertain how many cells we have to help determine how many random numbers we need.
+     * Note: varying column sizes are not supported yet.
+     *
+     * @return the amount of cells we have for this reel.
+     */
+    @JsonIgnore
+    public int getCellAmount() {
+        // Done like this to accommodate for varying columns per row (counts columns per row).
+        return cells.stream().mapToInt(row -> row.size()).sum();
+    }
+
+    public List<List<ReelCell>> getCells() {
+        return cells;
+    }
+
+    public Set<Payline> getPayLines() {
+        return payLines;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////// Equals, hashcode, toString //////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -46,14 +46,18 @@ public class Slot implements JsonDomainObject {
     }
 
     /**
-     * Constructs a default slot implementation with a Reel of five columns and three rows.
+     * Constructs default slot implementations with a payline.
      */
     public static Slot of(SlotType type, String player) {
         switch (type) {
             case CLASSIC:
-                return new Slot(SlotId.create(), "Classic", 0L, Instant.now(), player, Reel.of(3, 3));
+                Reel classicReel = Reel.of(3, 3);
+                classicReel.addPayline(1, new Integer[]{2, 2, 2});
+                return new Slot(SlotId.create(), "Classic", 0L, Instant.now(), player, classicReel);
             case FIVE_BY_THREE:
-                return new Slot(SlotId.create(), "FiveByThree", 0L, Instant.now(), player, Reel.of(3, 5));
+                Reel fiveByThree = Reel.of(3, 5);
+                fiveByThree.addPayline(1, new Integer[]{2, 2, 2, 2, 2});
+                return new Slot(SlotId.create(), "FiveByThree", 0L, Instant.now(), player, fiveByThree);
             default:
                 throw new UnsupportedOperationException("Unsupported slot type.");
         }
