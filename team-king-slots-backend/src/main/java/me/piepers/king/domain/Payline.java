@@ -7,6 +7,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -23,14 +24,13 @@ import java.util.Objects;
  * <p>
  * The coordinates represent how the payline runs from left to right. In principle, a payline can have every
  * orientation on the reel (left to right, right to left, top to bottom, bottom to top) although typically
- * a payline in a normal machine only runs from left to right. In this version of the application, paylines are indeed
+ * a payline in a normal machine only runs from left to right. <b>In this version of the application</b>, paylines are indeed
  * left to right oriented so coordinates are always evaluated that way. Eg. 1, 2, 3, 4, 5 for a reel with five columns
  * and five rows would mean a line that runs from ([x-y]) 1-1, 2-2, 3-3, 4-4, 5-5 (so a diagonal line).
  * Or: 1, 2, 1, 1 would be 1-1, 2-2, 3-1, 4-1.
  * <p>
- * A payline ALWAYS starts on the first possible cell in a row. If the reel has a layout with missing cells,
- * for example at the beginning of a row, the payline must start on a cell that is present in a column that has one
- * or more missing cells. For example a reel that has the following layout:
+ * A payline ALWAYS starts on the first possible cell in a row but if a cell is missing in a row, that payline can
+ * still reference a cell in that row. For example a reel that has the following layout:
  * <p>
  * **_____
  * **| | |
@@ -40,8 +40,18 @@ import java.util.Objects;
  * --| | |--
  * **-----
  * <p>
- * (so with 4 columns and the middle columns have 2 more rows, one at the top and one at the bottom). Then a payline of
- * that is left-to-rigt oriented can never start with 1. For example: 1, 1, 1, 1 in the above example is invalid.
+ * (so with 4 columns and the middle columns have 2 more rows, one at the top and one at the bottom) Then a payline
+ * that is left-to-right oriented in the first row is expected to still have the coordinates 1, 1, 1, 1. A
+ * representation in the UI would be:
+ * ***_____
+ * |X|X|
+ * ---------
+ * | | | | |
+ * | | | | |
+ * --| | |--
+ * **-----
+ * <p>
+ * During the calculation of the score the engine makes sure that theses cells are simply not present.
  * Coordinates of 2, 1, 1, 2 are valid, however:
  * **_____
  * **|x|x|
@@ -51,7 +61,8 @@ import java.util.Objects;
  * --| | |--
  * **-----
  * <p>
- * A payline spans the entire row (although part of a payline can be won if some of the images are equal).
+ * The payline calculates equality of the cells from left to right. Of two equal images would yield a score, then, in
+ * the above example, if 2 and 1 are equal, this is a score. However if 1 and 2 are equal this is not a score.
  * <p>
  * <p>
  * 2, 1, 1 would, for example, be an invalid payline (although the Payline class does not know that). What the
@@ -77,12 +88,15 @@ import java.util.Objects;
  * The active flag,  determines of the payline is active.  This is also a setting a player can configure
  * while playing. A "bet" does not signify the value it represents. This can be one cent or one euro, dollar or
  * whatever.
+ * <p>
+ * If more than one paylines are resulting in a score, this is summed up to a total score of that spin.
  *
  * @author Bas Piepers
  */
 @DataObject
 public class Payline implements JsonDomainObject {
     private final int reference;
+    // A row of coordinates, starts at 1.
     private final JsonArray coordinates;
     private boolean active;
     private int bet;
@@ -98,33 +112,21 @@ public class Payline implements JsonDomainObject {
         this.reference = reference;
         this.coordinates = coordinates;
         this.active = active;
-        this.validateCoordinates();
     }
 
-    private Payline(int reference, int[] coordinates, boolean active, int bet) {
+    private Payline(int reference, Integer[] coordinates, boolean active, int bet) {
         this.reference = reference;
-        this.coordinates = new JsonArray(Arrays.asList(coordinates));
+        this.coordinates = new JsonArray();
+        this.coordinates.getList().addAll(Arrays.asList(coordinates));
         this.active = active;
-        this.validateCoordinates();
+
     }
 
-    private void validateCoordinates() {
-        if (Objects.isNull(this.coordinates) || this.coordinates.size() == 0 || Objects.isNull(this.coordinates.getInteger(0))) {
-            throw new IllegalStateException("Coordinates should at least be present.");
-        }
-
-        for (int i = 0; i < this.coordinates.size(); i++) {
-            if (i != 0 && (i > 0 && this.coordinates.getInteger(i) < this.coordinates.getInteger(i - 1))) {
-                throw new IllegalStateException("The coordinates in the reel must have successive or equal values.");
-            }
-        }
-    }
-
-    public static Payline of(int reference, int[] coordinates, int bet) {
+    public static Payline of(int reference, Integer[] coordinates, int bet) {
         return new Payline(reference, coordinates, false, bet);
     }
 
-    public static Payline of(int reference, int[] coordinates, boolean active, int bet) {
+    public static Payline of(int reference, Integer[] coordinates, boolean active, int bet) {
         return new Payline(reference, coordinates, active, bet);
     }
 

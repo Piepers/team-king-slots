@@ -96,7 +96,31 @@ public class ReelTest {
         Reel reel = new Reel(new JsonObject(json));
         assertThat(reel.getCells().size()).isEqualTo(3);
         assertThat(reel.getPayLines().size()).isEqualTo(2);
-        System.out.println(reel.getCells().size() + " " + reel.getCells().size());
+    }
+
+    @Test
+    public void test_that_payline_must_span_entire_row() {
+        Reel reel = Reel.of(4, 5);
+
+        assertThatThrownBy(() -> reel.addPayline(1, new Integer[]{1, 2, 1})).isExactlyInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> reel.addPayline(1, new Integer[]{1,1,1,1,1,2}));
+    }
+
+    @Test
+    public void test_that_duplicate_payline_references_are_not_allowed() {
+
+        Reel reel = Reel.of(3, 3);
+
+        reel.addPayline(1, new Integer[]{1, 1, 1});
+        assertThatThrownBy(() -> reel.addPayline(1, new Integer[]{1, 2, 3})).isExactlyInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void test_that_duplicate_payline_coordinates_are_not_allowed() {
+        Reel reel = Reel.of(3, 6);
+
+        reel.addPayline(1, new Integer[]{1, 2, 3, 2, 2, 1});
+        assertThatThrownBy(() -> reel.addPayline(2, new Integer[]{1, 2, 3, 2, 2, 1})).isExactlyInstanceOf(IllegalArgumentException.class);
     }
 
     private void assertExpectedValues(Reel reel, int[][] expectedValues) {
