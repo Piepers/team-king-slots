@@ -7,7 +7,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -109,12 +108,20 @@ public class Payline implements JsonDomainObject {
     }
 
     private Payline(int reference, JsonArray coordinates, boolean active, int bet) {
+        if (Objects.isNull(coordinates)) {
+            throw new IllegalArgumentException("Coordinates are mandatory.");
+        }
+
         this.reference = reference;
         this.coordinates = coordinates;
         this.active = active;
     }
 
     private Payline(int reference, Integer[] coordinates, boolean active, int bet) {
+        if (Objects.isNull(coordinates)) {
+            throw new IllegalArgumentException("Coordinates are mandatory.");
+        }
+        
         this.reference = reference;
         this.coordinates = new JsonArray();
         this.coordinates.getList().addAll(Arrays.asList(coordinates));

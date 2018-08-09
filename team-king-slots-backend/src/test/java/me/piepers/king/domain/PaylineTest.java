@@ -33,6 +33,6 @@ public class PaylineTest {
     @Test
     public void test_that_when_empty_coordinates_are_given_that_exception_is_thrown() {
         // TODO: might want to test the message as well.
-        assertThrows(IllegalStateException.class, () -> Payline.of(1, null, 1));
+        assertThrows(IllegalArgumentException.class, () -> Payline.of(1, null, 1));
     }
 }
