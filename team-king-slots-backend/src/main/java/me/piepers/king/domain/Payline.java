@@ -121,7 +121,7 @@ public class Payline implements JsonDomainObject {
         if (Objects.isNull(coordinates)) {
             throw new IllegalArgumentException("Coordinates are mandatory.");
         }
-        
+
         this.reference = reference;
         this.coordinates = new JsonArray();
         this.coordinates.getList().addAll(Arrays.asList(coordinates));

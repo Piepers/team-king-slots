@@ -162,7 +162,7 @@ public class Reel implements JsonDomainObject {
 
     @Override
     public JsonObject toJson() {
-        return new JsonObject().put("cells", new JsonArray(cells));
+        return new JsonObject().put("cells", new JsonArray(cells)).put("payLines", Objects.nonNull(this.payLines) ? new JsonArray(new ArrayList(this.payLines)) : null);
     }
 
     public Reel assignNumbersToReels(List<Integer> numbers) {
@@ -191,9 +191,28 @@ public class Reel implements JsonDomainObject {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Reel reel = (Reel) o;
+
+        if (!cells.equals(reel.cells)) return false;
+        return payLines != null ? payLines.equals(reel.payLines) : reel.payLines == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = cells.hashCode();
+        result = 31 * result + (payLines != null ? payLines.hashCode() : 0);
+        return result;
+    }
+
+    @Override
     public String toString() {
         return "Reel{" +
                 "cells=" + cells +
+                ", payLines=" + payLines +
                 '}';
     }
 }
