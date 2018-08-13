@@ -24,6 +24,8 @@ public class Slot implements JsonDomainObject {
     private final String player;
     private final Reel reel;
     private SlotStatus status;
+    private final int lowestNr;
+    private final int highestNr;
 
     public Slot(JsonObject jsonObject) {
         this.id = SlotId.of(jsonObject.getString("id"));
@@ -33,9 +35,11 @@ public class Slot implements JsonDomainObject {
         this.player = jsonObject.getString("player");
         this.status = SlotStatus.resolve(jsonObject.getString("status"));
         this.reel = new Reel(jsonObject.getJsonObject("reel"));
+        this.lowestNr = jsonObject.getInteger("lowestNr");
+        this.highestNr = jsonObject.getInteger("highestNr");
     }
 
-    private Slot(SlotId id, String name, Long score, Instant created, String player, Reel reel) {
+    private Slot(SlotId id, String name, Long score, Instant created, String player, Reel reel, int lowestNr, int highestNr) {
         this.id = id;
         this.status = SlotStatus.INITIALIZED;
         this.name = name;
@@ -43,6 +47,8 @@ public class Slot implements JsonDomainObject {
         this.created = created;
         this.player = player;
         this.reel = reel;
+        this.lowestNr = lowestNr;
+        this.highestNr = highestNr;
     }
 
     /**
@@ -53,11 +59,15 @@ public class Slot implements JsonDomainObject {
             case CLASSIC:
                 Reel classicReel = Reel.of(3, 3);
                 classicReel.addPayline(1, new Integer[]{2, 2, 2});
-                return new Slot(SlotId.create(), "Classic", 0L, Instant.now(), player, classicReel);
+                return new Slot(SlotId.create(), "Classic", 0L, Instant.now(), player, classicReel, 0, 100);
             case FIVE_BY_THREE:
                 Reel fiveByThree = Reel.of(3, 5);
                 fiveByThree.addPayline(1, new Integer[]{2, 2, 2, 2, 2});
-                return new Slot(SlotId.create(), "FiveByThree", 0L, Instant.now(), player, fiveByThree);
+                return new Slot(SlotId.create(), "FiveByThree", 0L, Instant.now(), player, fiveByThree, 0, 100);
+            case FIVE_BY_FOUR:
+                Reel fiveByFour = Reel.of(4, 5);
+                fiveByFour.addPayline(1, new Integer[]{2, 2, 2, 2, 2});
+                return new Slot(SlotId.create(), "FiveByFour", 0L, Instant.now(), player, fiveByFour, 0, 100);
             default:
                 throw new UnsupportedOperationException("Unsupported slot type.");
         }
@@ -132,11 +142,14 @@ public class Slot implements JsonDomainObject {
 
         Slot slot = (Slot) o;
 
+        if (lowestNr != slot.lowestNr) return false;
+        if (highestNr != slot.highestNr) return false;
         if (!id.equals(slot.id)) return false;
         if (!name.equals(slot.name)) return false;
         if (!score.equals(slot.score)) return false;
         if (!created.equals(slot.created)) return false;
         if (!player.equals(slot.player)) return false;
+        if (!reel.equals(slot.reel)) return false;
         return status == slot.status;
     }
 
@@ -147,7 +160,10 @@ public class Slot implements JsonDomainObject {
         result = 31 * result + score.hashCode();
         result = 31 * result + created.hashCode();
         result = 31 * result + player.hashCode();
-        result = 31 * result + status.hashCode();
+        result = 31 * result + reel.hashCode();
+        result = 31 * result + (status != null ? status.hashCode() : 0);
+        result = 31 * result + lowestNr;
+        result = 31 * result + highestNr;
         return result;
     }
 
@@ -161,6 +177,8 @@ public class Slot implements JsonDomainObject {
                 ", player='" + player + '\'' +
                 ", reel=" + reel +
                 ", status=" + status +
+                ", lowestNr=" + lowestNr +
+                ", highestNr=" + highestNr +
                 '}';
     }
 

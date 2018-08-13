@@ -29,6 +29,7 @@ public class ReelCell {
         this.value = value;
     }
 
+
     @Override
     public String toString() {
         return "ReelCell{" +

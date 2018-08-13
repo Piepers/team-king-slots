@@ -9,5 +9,5 @@ package me.piepers.king.domain;
  * CLASSIC: has three columns with three rows and one payline in the middle of the slot.
  */
 public enum SlotType {
-    FIVE_BY_THREE, CLASSIC;
+    FIVE_BY_THREE, FIVE_BY_FOUR, CLASSIC;
 }

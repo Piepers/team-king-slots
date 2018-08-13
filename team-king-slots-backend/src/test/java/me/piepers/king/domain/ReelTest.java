@@ -68,7 +68,7 @@ public class ReelTest {
         assertThatThrownBy(() -> reel.getCells().get(0).get(4)).isExactlyInstanceOf(ArrayIndexOutOfBoundsException.class);
 
         assertThatThrownBy(() -> reel.getCells().get(3)).isExactlyInstanceOf(IndexOutOfBoundsException.class);
-        String expectedJson = "{\"cells\":[[0,0,0,0],[0,0,0,0],[0,0,0,0]]}";
+        String expectedJson = "{\"cells\":[[0,0,0,0],[0,0,0,0],[0,0,0,0]],\"payLines\":null}";
         assertThat(reel.toJson().encode()).isEqualTo(expectedJson);
     }
 
