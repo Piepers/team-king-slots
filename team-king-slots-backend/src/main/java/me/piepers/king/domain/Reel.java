@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
  */
 @DataObject
 public class Reel implements JsonDomainObject {
+
     private final List<List<ReelCell>> cells;
     private Set<Payline> payLines;
 
@@ -53,7 +54,7 @@ public class Reel implements JsonDomainObject {
                             ((JsonArray) o)
                                     .stream()
                                     // FIXME: better representation of null values would be nice.
-                                    .map(item -> Objects.isNull(item) ? null : ReelCell.of((Integer) item))
+                                    .map(item -> Objects.isNull(item) ? null : this.toReelCell((JsonObject) item))
                                     .collect(Collectors.toList());
                     rcs.add(row);
                 });
@@ -65,6 +66,14 @@ public class Reel implements JsonDomainObject {
         if (Objects.nonNull(lines)) {
             this.payLines = lines.stream().map(jo -> new Payline((JsonObject) jo)).collect(Collectors.toSet());
         }
+    }
+
+    // FIXME: how to map a simple key - value pair properly?
+    private ReelCell toReelCell(JsonObject item) {
+        Map<String, Object> representation = item.getMap();
+        List<Integer> number = representation.keySet().stream().map(s -> Integer.valueOf(s)).collect(Collectors.toList());
+        List<String> value = representation.values().stream().map(i -> String.valueOf(i)).collect(Collectors.toList());
+        return ReelCell.of(number.get(0), value.get(0));
     }
 
     /**
@@ -150,7 +159,9 @@ public class Reel implements JsonDomainObject {
 
     @Override
     public JsonObject toJson() {
-        return new JsonObject().put("cells", new JsonArray(cells)).put("payLines", Objects.nonNull(this.payLines) ? new JsonArray(new ArrayList(this.payLines)) : null);
+        return new JsonObject()
+                .put("cells", new JsonArray(cells))
+                .put("payLines", Objects.nonNull(this.payLines) ? new JsonArray(new ArrayList(this.payLines)) : null);
     }
 
     public Reel assignNumbersToReels(List<Integer> numbers) {

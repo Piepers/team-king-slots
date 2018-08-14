@@ -8,17 +8,19 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * The configuration of cell symbols on a Slot. The CellSymbolConfig is a representation of a symbol on the {@link ReelCell}
- * with one or more random numbers. In the prototype implementation the symbol is represented by an Enum that is
- * inspired by a couple of real life symbols but can later on be part of information that comes from an external source.
+ * The configuration of cell symbols on a Slot. The CellSymbolConfig is a representation of a symbol on the
+ * {@link ReelCell} with one or more random numbers. In the prototype implementation the symbol is represented by an
+ * Enum that is inspired by a couple of real life symbols but can later on be part of information that comes from an
+ * external source.
  * <p>
- * The CellSymbolConfig is not aware of the random numbers that are used, it is the {@link Reel}'s responsibility to only
- * assign a random number once. Symbols and which random numbers they represent is part of the configuration of a slot.
+ * The CellSymbolConfig is not aware of the random numbers that are used, it is the {@link Reel}'s responsibility to
+ * only assign a random number once. Symbols and which random numbers they represent is part of the configuration of a
+ * slot.
  * <p>
  * The value that a symbol represents is configured in scoreValues. This holds a map with two numbers where key
  * represents the amount of symbols and the value represents the score that is bound to that amount. For example:
- * 3 symbols in a row can represent a score of 150, 4 a score of 200 and 5 a score of 250. The CellSymbolConfig is not aware
- * of the amount of columns as reel actually has. Its just a configuration item that is needed to initialize a slot.
+ * 3 symbols in a row can represent a score of 150, 4 a score of 200 and 5 a score of 250. The CellSymbolConfig is not
+ * aware of the amount of columns a reel actually has. Its just a configuration item that is needed to initialize a slot.
  *
  * @author Bas Piepers
  */
@@ -36,9 +38,13 @@ public class CellSymbolConfig implements JsonDomainObject {
         JsonObject scoreConfig = jsonObject.getJsonObject("scoreValues");
         Map<String, Object> scoreConfigMap = scoreConfig.getMap();
         // Map a String, Object pair to a SubsequentSumbols, ScoreValue pair.
-        List list = scoreConfigMap.keySet().stream().map(key -> SubsequentSymbols.resolve(key)).collect(Collectors.toList());
-        list.stream().forEach(item -> System.out.println(item.toString()));
-        this.scoreValues = scoreConfigMap.keySet().stream().map(key -> SubsequentSymbols.resolve(key)).collect(Collectors.toMap(s -> s, s -> ScoreValue.of((Integer)scoreConfigMap.get(s.name()))));
+        this.scoreValues = scoreConfigMap
+                .keySet()
+                .stream()
+                .map(key -> SubsequentSymbols.resolve(key))
+                .collect(Collectors
+                        .toMap(s -> s,
+                                s -> ScoreValue.of((Integer) scoreConfigMap.get(s.name()))));
     }
 
     private CellSymbolConfig(Symbol symbol, Integer[] numberAssignment, Map<SubsequentSymbols, ScoreValue> scoreValues) {
@@ -47,6 +53,18 @@ public class CellSymbolConfig implements JsonDomainObject {
         this.scoreValues = scoreValues;
     }
 
+    /**
+     * Factory method that allows to set a symbol with a range (from and to) of random numbers for which the given
+     * symbol is chosen and the score configuration. The scoreValues represent how many {@link SubsequentSymbols} a
+     * given {@link ScoreValue} represents.
+     *
+     * @param symbol,      the symbol to configure for a cell.
+     * @param from,        the starting value of the random number (inclusive) for which this symbol is valid.
+     * @param to,          the end value of the random number (excluding) for which this symbol is valid.
+     * @param scoreValues, the scorevalues configuration. Ie. how many points a specific subsequent set of symbols
+     *                     represent.
+     * @return an instance of {@link CellSymbolConfig} that can be used in a slot to calculate the score of a spin.
+     */
     public static CellSymbolConfig of(Symbol symbol, int from, int to, Map<SubsequentSymbols, ScoreValue> scoreValues) {
         if (from >= to) {
             throw new IllegalArgumentException("From must be smaller than to.");
@@ -57,7 +75,19 @@ public class CellSymbolConfig implements JsonDomainObject {
         return new CellSymbolConfig(symbol, range, scoreValues);
     }
 
+    /**
+     * A factory method that sets a specific set of numbers to a {@link Symbol} and a score configuration.
+     *
+     * @param symbol,      the symbol to configure for a cell.
+     * @param scoreValues, the score values configuration. Ie. how many points a specific subsequent set of symbols
+     *                     represent.
+     * @param numbers,     one or more numbers for which this symbol configuration applies.
+     * @return an instance of {@link CellSymbolConfig} that can be used in a slot to calculate the score of a spin.
+     */
     public static CellSymbolConfig of(Symbol symbol, Map<SubsequentSymbols, ScoreValue> scoreValues, Integer... numbers) {
+        if (Objects.isNull(numbers) || numbers.length == 0) {
+            throw new IllegalArgumentException("Expecting at least one number to configure this instance.");
+        }
         if (Arrays.stream(numbers).allMatch(new HashSet<>()::add)) {
             return new CellSymbolConfig(symbol, numbers, scoreValues);
         } else {
@@ -65,6 +95,15 @@ public class CellSymbolConfig implements JsonDomainObject {
         }
     }
 
+    /**
+     * A factory method that sets one specific number to a {@link Symbol} and a score configuration.
+     *
+     * @param symbol,      the symbol to configure for a cell.
+     * @param scoreValues, the score values configuration. Ie. how many points a specific subsequent set of symbols
+     *                     represent.
+     * @param number,      one number for which this symbol configuration applies.
+     * @return an instance of {@link CellSymbolConfig} that can be used in a slot to calculate the score of a spin.
+     */
     public static CellSymbolConfig of(Symbol symbol, Map<SubsequentSymbols, ScoreValue> scoreValues, int number) {
         return new CellSymbolConfig(symbol, new Integer[]{number}, scoreValues);
     }
@@ -109,46 +148,46 @@ public class CellSymbolConfig implements JsonDomainObject {
     }
 
     enum Symbol {
-        SEVEN, BELL, BAR, TWO_BARS, THREE_BARS, EMPTY, IMAGE1, IMAGE2, IMAGE3, IMAGE4, CHAR1, CHAR2, CHAR3, CHAR4, CHAR5, CHAR6;
+        NONE, SEVEN, BELL, BAR, TWO_BARS, THREE_BARS, EMPTY, IMAGE1, IMAGE2, IMAGE3, IMAGE4, CHAR1, CHAR2, CHAR3, CHAR4, CHAR5, CHAR6;
 
 
         public static Symbol resolve(String from) {
             String localFrom = from.toUpperCase();
             switch (localFrom) {
                 case "SEVEN":
-                    return Symbol.SEVEN;
+                    return SEVEN;
                 case "BELL":
-                    return Symbol.BELL;
+                    return BELL;
                 case "BAR":
-                    return Symbol.BAR;
+                    return BAR;
                 case "TWO_BARS":
-                    return Symbol.TWO_BARS;
+                    return TWO_BARS;
                 case "THREE_BARS":
-                    return Symbol.THREE_BARS;
+                    return THREE_BARS;
                 case "EMPTY":
-                    return Symbol.EMPTY;
+                    return EMPTY;
                 case "IMAGE1":
-                    return Symbol.IMAGE1;
+                    return IMAGE1;
                 case "IMAGE2":
-                    return Symbol.IMAGE2;
+                    return IMAGE2;
                 case "IMAGE3":
-                    return Symbol.IMAGE3;
+                    return IMAGE3;
                 case "IMAGE4":
-                    return Symbol.IMAGE4;
+                    return IMAGE4;
                 case "CHAR1":
-                    return Symbol.CHAR1;
+                    return CHAR1;
                 case "CHAR2":
-                    return Symbol.CHAR2;
+                    return CHAR2;
                 case "CHAR3":
-                    return Symbol.CHAR3;
+                    return CHAR3;
                 case "CHAR4":
-                    return Symbol.CHAR4;
+                    return CHAR4;
                 case "CHAR5":
-                    return Symbol.CHAR5;
+                    return CHAR5;
                 case "CHAR6":
-                    return Symbol.CHAR6;
+                    return CHAR6;
                 default:
-                    throw new IllegalArgumentException("Invalid value for symbol: " + from);
+                    return NONE;
             }
         }
     }

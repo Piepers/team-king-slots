@@ -115,6 +115,7 @@ public class Payline implements JsonDomainObject {
         this.reference = reference;
         this.coordinates = coordinates;
         this.active = active;
+        this.bet = bet;
     }
 
     private Payline(int reference, Integer[] coordinates, boolean active, int bet) {
@@ -126,6 +127,7 @@ public class Payline implements JsonDomainObject {
         this.coordinates = new JsonArray();
         this.coordinates.getList().addAll(Arrays.asList(coordinates));
         this.active = active;
+        this.bet = bet;
 
     }
 
@@ -137,6 +139,7 @@ public class Payline implements JsonDomainObject {
         return new Payline(reference, coordinates, active, bet);
     }
 
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -146,6 +149,7 @@ public class Payline implements JsonDomainObject {
 
         if (reference != payline.reference) return false;
         if (active != payline.active) return false;
+        if (bet != payline.bet) return false;
         return coordinates.equals(payline.coordinates);
     }
 
@@ -154,6 +158,7 @@ public class Payline implements JsonDomainObject {
         int result = reference;
         result = 31 * result + coordinates.hashCode();
         result = 31 * result + (active ? 1 : 0);
+        result = 31 * result + bet;
         return result;
     }
 
@@ -167,19 +172,19 @@ public class Payline implements JsonDomainObject {
                 '}';
     }
 
+    // For convenience.
+    @JsonIgnore
+    @GenIgnore
+    public int[] getCoordsAsArray() {
+        return this.coordinates.stream().mapToInt(coordinate -> (Integer) coordinate).toArray();
+    }
+
     public int getReference() {
         return reference;
     }
 
     public JsonArray getCoordinates() {
         return coordinates;
-    }
-
-    // For convenience.
-    @JsonIgnore
-    @GenIgnore
-    public int[] getCoordsAsArray() {
-        return this.coordinates.stream().mapToInt(coordinate -> (Integer) coordinate).toArray();
     }
 
     public boolean isActive() {

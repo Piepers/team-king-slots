@@ -24,6 +24,7 @@ public class Slot implements JsonDomainObject {
     private final String player;
     private final Reel reel;
     private SlotStatus status;
+    // TODO: might not be necessary
     private final int lowestNr;
     private final int highestNr;
 
@@ -52,7 +53,7 @@ public class Slot implements JsonDomainObject {
     }
 
     /**
-     * Constructs default slot implementations with a payline.
+     * Constructs default slot implementations with one payline.
      */
     public static Slot of(SlotType type, String player) {
         switch (type) {
@@ -134,6 +135,13 @@ public class Slot implements JsonDomainObject {
         this.status = status;
     }
 
+    public int getLowestNr() {
+        return lowestNr;
+    }
+
+    public int getHighestNr() {
+        return highestNr;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -185,5 +193,10 @@ public class Slot implements JsonDomainObject {
     @FunctionalInterface
     public interface RandomNumberFetcher {
         Single<List<Integer>> fetch(Slot slot);
+    }
+
+    @FunctionalInterface
+    public interface SymbolAssigner {
+        CellSymbolConfig.Symbol assignForNumber(int number, CellSymbolConfig config);
     }
 }

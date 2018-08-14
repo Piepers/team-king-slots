@@ -11,9 +11,9 @@ public class ReelTest {
     @Test
     public void test_that_2d_json_is_mapped_as_expected() {
         String json = "{\"cells\":[" +
-                "[1,2,3]," +
-                "[3,4,5]," +
-                "[6,7,8]" +
+                "[{\"1\":\"NONE\"},{\"2\":\"NONE\"},{\"3\":\"NONE\"}]," +
+                "[{\"3\":\"NONE\"},{\"4\":\"NONE\"},{\"5\":\"NONE\"}]," +
+                "[{\"6\":\"NONE\"},{\"7\":\"NONE\"},{\"8\":\"NONE\"}]" +
                 "]}";
         JsonObject jsonObject = new JsonObject(json);
         Reel reel = new Reel(jsonObject);
@@ -31,11 +31,7 @@ public class ReelTest {
 
     @Test
     public void test_that_uneven_rows_are_still_mapped_correctly() {
-        String json = "{\"cells\":[" +
-                "[20,31]," +
-                "[3,4,5,6]," +
-                "[18,19,20,21,22]" +
-                "]}";
+        String json = "{\"cells\":[[{\"20\":\"NONE\"}, {\"13\":\"NONE\"}],[{\"3\":\"NONE\"}, {\"4\":\"NONE\"}, {\"5\":\"NONE\"}, {\"6\":\"NONE\"}],[{\"18\":\"NONE\"}, {\"19\":\"NONE\"}, {\"20\":\"NONE\"}, {\"21\":\"NONE\"}, {\"22\":\"NONE\"}]]}";
         JsonObject jsonObject = new JsonObject(json);
         Reel reel = new Reel(jsonObject);
         assertThat(reel.getCells().size()).isEqualTo(3);
@@ -45,7 +41,7 @@ public class ReelTest {
         assertThat(reel.getCells().get(1).size()).isEqualTo(4);
         assertThat(reel.getCells().get(2)).isNotNull();
         assertThat(reel.getCells().get(2).size()).isEqualTo(5);
-        int[][] expectedValues = {{20, 31}, {3, 4, 5, 6}, {18, 19, 20, 21, 22}};
+        int[][] expectedValues = {{20, 13}, {3, 4, 5, 6}, {18, 19, 20, 21, 22}};
         assertExpectedValues(reel, expectedValues);
 
         assertThat(reel.getCellAmount()).isEqualTo(11);
@@ -68,7 +64,7 @@ public class ReelTest {
         assertThatThrownBy(() -> reel.getCells().get(0).get(4)).isExactlyInstanceOf(ArrayIndexOutOfBoundsException.class);
 
         assertThatThrownBy(() -> reel.getCells().get(3)).isExactlyInstanceOf(IndexOutOfBoundsException.class);
-        String expectedJson = "{\"cells\":[[0,0,0,0],[0,0,0,0],[0,0,0,0]],\"payLines\":null}";
+        String expectedJson ="{\"cells\":[[{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"}],[{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"}],[{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"}]],\"payLines\":null}";
         assertThat(reel.toJson().encode()).isEqualTo(expectedJson);
     }
 
@@ -76,9 +72,9 @@ public class ReelTest {
     public void test_that_paylines_are_mapped_as_expected() {
         String json = "{\n" +
                 "\"cells\": [\n" +
-                "[0, 0, 0, 0, 0],\n" +
-                "[0, 0, 0, 0, 0],\n" +
-                "[0, 0, 0, 0, 0]\n" +
+                "[{\"0\":\"NONE\"}, {\"0\":\"NONE\"}, {\"0\":\"NONE\"}, {\"0\":\"NONE\"}, {\"0\":\"NONE\"}],\n" +
+                "[{\"0\":\"NONE\"}, {\"0\":\"NONE\"}, {\"0\":\"NONE\"}, {\"0\":\"NONE\"}, {\"0\":\"NONE\"}],\n" +
+                "[{\"0\":\"NONE\"}, {\"0\":\"NONE\"}, {\"0\":\"NONE\"}, {\"0\":\"NONE\"}, {\"0\":\"NONE\"}]\n" +
                 "],\n" +
                 "\"payLines\": [{\n" +
                 "\"reference\": 1,\n" +
