@@ -3,7 +3,7 @@ package me.piepers.king.domain;
 import java.util.Objects;
 
 /**
- * Represents how much symbols in a row represent a value. To limit the values that are possible.
+ * Represents how much symbols in a row represent a score. To limit the values that are possible.
  *
  * @author Bas Piepers
  */

@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Represents the configuration of a reel which needs to be valid before a spin can be executed on it. It needs a 'from'
+ * Represents the configuration of a reel which needs to be valid before a spin can be executed on the reel. It needs a 'from'
  * and 'to' (inclusive) number to let it know which random numbers can be present and it needs a list of
  * {@link CellSymbolConfig} to determine which symbols are valid for the random numbers.
  * <p>

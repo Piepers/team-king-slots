@@ -36,6 +36,7 @@ public class Reel implements JsonDomainObject {
 
     private final List<List<ReelCell>> cells;
     private Set<Payline> payLines;
+    private ReelConfig reelConfig;
 
     ////////////////////////////////////////////////////////////////////////////
     //////////////Constructors and factory methods/////////////////////////////
@@ -65,6 +66,11 @@ public class Reel implements JsonDomainObject {
         // Paylines are in principle optional although a slot machine without paylines is not useful.
         if (Objects.nonNull(lines)) {
             this.payLines = lines.stream().map(jo -> new Payline((JsonObject) jo)).collect(Collectors.toSet());
+        }
+        JsonObject config = jsonObject.getJsonObject("reelConfig");
+        if (Objects.nonNull(config)) {
+            this.reelConfig = new ReelConfig(config);
+
         }
     }
 
@@ -126,6 +132,20 @@ public class Reel implements JsonDomainObject {
             throw new IllegalArgumentException("This payline is either not valid or already exists.");
         }
         return this;
+    }
+
+    /**
+     * Reel configuration can only be set once and it needs to be valid.
+     *
+     * @param reelConfig, the configuration to set.
+     */
+    public void setReelConfig(ReelConfig reelConfig) {
+        if (Objects.isNull(this.reelConfig) && reelConfig.isValid()) {
+            this.reelConfig = reelConfig;
+        } else {
+            throw new IllegalStateException("A Reel configuration has already been set for this Reel or the provided reelconfig is not valid (" + reelConfig.isValid() + ").");
+        }
+
     }
 
     // Must completely fit in the grid from start to finish. Note that a payline's coordinate start at 1. Variable
@@ -213,9 +233,14 @@ public class Reel implements JsonDomainObject {
         return payLines;
     }
 
+    public ReelConfig getReelConfig() {
+        return reelConfig;
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////// Equals, hashcode, toString //////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -224,13 +249,15 @@ public class Reel implements JsonDomainObject {
         Reel reel = (Reel) o;
 
         if (!cells.equals(reel.cells)) return false;
-        return payLines != null ? payLines.equals(reel.payLines) : reel.payLines == null;
+        if (payLines != null ? !payLines.equals(reel.payLines) : reel.payLines != null) return false;
+        return reelConfig != null ? reelConfig.equals(reel.reelConfig) : reel.reelConfig == null;
     }
 
     @Override
     public int hashCode() {
         int result = cells.hashCode();
         result = 31 * result + (payLines != null ? payLines.hashCode() : 0);
+        result = 31 * result + (reelConfig != null ? reelConfig.hashCode() : 0);
         return result;
     }
 
@@ -239,6 +266,7 @@ public class Reel implements JsonDomainObject {
         return "Reel{" +
                 "cells=" + cells +
                 ", payLines=" + payLines +
+                ", reelConfig=" + reelConfig +
                 '}';
     }
 }
