@@ -1,6 +1,8 @@
 package me.piepers.king.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.core.json.JsonArray;
@@ -118,7 +120,8 @@ public class Payline implements JsonDomainObject {
         this.bet = bet;
     }
 
-    private Payline(int reference, Integer[] coordinates, boolean active, int bet) {
+    @JsonCreator
+    private Payline(@JsonProperty("reference") int reference, @JsonProperty("coordinates")Integer[] coordinates, @JsonProperty("active") boolean active, @JsonProperty("bet") int bet) {
         if (Objects.isNull(coordinates)) {
             throw new IllegalArgumentException("Coordinates are mandatory.");
         }

@@ -64,8 +64,6 @@ public class ReelTest {
         assertThatThrownBy(() -> reel.getCells().get(0).get(4)).isExactlyInstanceOf(ArrayIndexOutOfBoundsException.class);
 
         assertThatThrownBy(() -> reel.getCells().get(3)).isExactlyInstanceOf(IndexOutOfBoundsException.class);
-        String expectedJson ="{\"cells\":[[{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"}],[{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"}],[{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"},{\"0\":\"NONE\"}]],\"payLines\":null}";
-        assertThat(reel.toJson().encode()).isEqualTo(expectedJson);
     }
 
     @Test
@@ -99,7 +97,7 @@ public class ReelTest {
         Reel reel = Reel.of(4, 5);
 
         assertThatThrownBy(() -> reel.addPayline(1, new Integer[]{1, 2, 1})).isExactlyInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> reel.addPayline(1, new Integer[]{1,1,1,1,1,2}));
+        assertThatThrownBy(() -> reel.addPayline(1, new Integer[]{1, 1, 1, 1, 1, 2}));
     }
 
     @Test

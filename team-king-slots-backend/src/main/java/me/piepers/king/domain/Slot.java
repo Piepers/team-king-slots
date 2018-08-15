@@ -102,6 +102,21 @@ public class Slot implements JsonDomainObject {
         }
     }
 
+    /**
+     * Needed to map the Reels differently: we don't want the key of the Paylines map in the Reel to be present in the
+     * payload and map them back and forth ourselves.
+     *
+     * @return the mapped JsonObject with which Vert.x will call the constructor of the this class (Slot).
+     */
+//    @Override
+//    public JsonObject toJson() {
+//        Map<String, Object> reel = this.reel.toJson().getMap();
+//        JsonObject slot = JsonObject.mapFrom(this);
+//        slot.remove("reel");
+//        slot.put("reel", reel);
+//        return slot;
+//    }
+
     // GETTERS
     public SlotId getId() {
         return id;

@@ -33,9 +33,10 @@ import java.util.stream.Collectors;
  */
 @DataObject
 public class Reel implements JsonDomainObject {
-
     private final List<List<ReelCell>> cells;
-    private Map<Integer, Payline> payLines;
+    // FIXME: must be a map, indeed, but can't map this somehow.
+    //    private Map<Integer, Payline> payLines;
+    private Set<Payline> payLines;
     private ReelConfig reelConfig;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -61,17 +62,17 @@ public class Reel implements JsonDomainObject {
                 });
         this.cells = Collections.unmodifiableList(rcs);
 
+
         JsonArray lines = jsonObject.getJsonArray("payLines");
 
         // Paylines are in principle optional although a slot machine without paylines is not useful.
         if (Objects.nonNull(lines)) {
-            this.payLines = lines.stream().map(jo -> new Payline((JsonObject) jo)).collect(Collectors.toMap(p -> p.getReference(), p -> p));
+            this.payLines = lines.stream().map(jo -> new Payline((JsonObject) jo)).collect(Collectors.toSet());
         }
 
         JsonObject config = jsonObject.getJsonObject("reelConfig");
         if (Objects.nonNull(config)) {
             this.reelConfig = new ReelConfig(config);
-
         }
     }
 
@@ -123,12 +124,12 @@ public class Reel implements JsonDomainObject {
 
     public Reel addPayline(int reference, Integer[] coordinates) {
         if (Objects.isNull(this.payLines)) {
-            this.payLines = new HashMap<>();
+            this.payLines = new HashSet<>();
         }
 
         Payline p = Payline.of(reference, coordinates, 0);
         if (!this.hasPayline(p) && this.payLineInGrid(coordinates)) {
-            this.payLines.put(p.getReference(), p);
+            this.payLines.add(p);
         } else {
             throw new IllegalArgumentException("This payline is either not valid or already exists.");
         }
@@ -169,20 +170,12 @@ public class Reel implements JsonDomainObject {
 
     private boolean hasPayline(Payline p) {
         return Objects.nonNull(this.payLines) &&
-                (this.payLines.containsKey(p.getReference()) ||
                 this.payLines
-                        .values()
                         .stream()
                         .anyMatch(payline ->
-                                payline.getCoordinates()
-                                        .equals(p.getCoordinates())));
-    }
-
-    @Override
-    public JsonObject toJson() {
-        return new JsonObject()
-                .put("cells", new JsonArray(cells))
-                .put("payLines", Objects.nonNull(this.payLines) ? new JsonArray(new ArrayList(this.payLines.values())) : null);
+                                // Has the same reference or the same coordinates.
+                                payline.getReference() == p.getReference() ||
+                                        payline.getCoordinates().equals(p.getCoordinates()));
     }
 
     public Reel assignNumbersToReels(List<Integer> numbers) {
@@ -230,7 +223,7 @@ public class Reel implements JsonDomainObject {
         return cells;
     }
 
-    public Map<Integer, Payline> getPayLines() {
+    public Set<Payline> getPayLines() {
         return payLines;
     }
 
@@ -241,6 +234,7 @@ public class Reel implements JsonDomainObject {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////// Equals, hashcode, toString //////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     @Override
     public boolean equals(Object o) {
