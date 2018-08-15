@@ -119,6 +119,37 @@ public class ReelTest {
         assertThatThrownBy(() -> reel.addPayline(2, new Integer[]{1, 2, 3, 2, 2, 1})).isExactlyInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    public void test_that_config_can_only_be_set_when_valid() {
+        ReelConfig rc = ReelConfig.of(1, 100).addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.BAR, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.THREE, SubsequentSymbols.FOUR, SubsequentSymbols.FIVE}, new Integer[]{100, 120, 130}), 1, 2, 3, 4, 5));
+        Reel reel = Reel.of(5, 5);
+        assertThatThrownBy(() -> reel.setReelConfig(rc)).isExactlyInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    public void test_that_when_config_is_valid_that_this_can_be_set_on_the_reel() {
+        ReelConfig rc = ReelConfig.of(1, 100).addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.BAR, 1, 101, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.THREE, SubsequentSymbols.FOUR, SubsequentSymbols.FIVE}, new Integer[]{100, 120, 130})));
+        assertThat(rc.isValid()).isTrue();
+
+        Reel reel = Reel.of(5, 5);
+        reel.setReelConfig(rc);
+        assertThat(reel.getReelConfig()).isNotNull();
+    }
+
+    @Test
+    public void test_that_when_config_is_already_set_that_this_can_not_be_redone() {
+        ReelConfig rc = ReelConfig.of(1, 100).addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.BAR, 1, 101, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.THREE, SubsequentSymbols.FOUR, SubsequentSymbols.FIVE}, new Integer[]{100, 120, 130})));
+        assertThat(rc.isValid()).isTrue();
+
+        Reel reel = Reel.of(5, 5);
+        reel.setReelConfig(rc);
+
+        ReelConfig anotherOne = ReelConfig.of(1, 100).addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.BAR, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.THREE, SubsequentSymbols.FOUR, SubsequentSymbols.FIVE}, new Integer[]{100, 120, 130}), 1, 2, 3, 4, 5));
+
+        assertThatThrownBy(() -> reel.setReelConfig(anotherOne)).isExactlyInstanceOf(IllegalStateException.class);
+
+    }
+
     private void assertExpectedValues(Reel reel, int[][] expectedValues) {
         assertThat(reel.getCells()).isNotNull();
         for (int i = 0; i < expectedValues.length; i++) {
