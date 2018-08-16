@@ -77,7 +77,7 @@ public class ReelConfig implements JsonDomainObject {
     }
 
 
-
+    @JsonIgnore
     public boolean isValid() {
         if (Objects.isNull(this.cellConfig) || this.cellConfig.size() == 0) {
             return false;

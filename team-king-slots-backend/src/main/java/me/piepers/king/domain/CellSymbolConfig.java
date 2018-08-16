@@ -1,5 +1,6 @@
 package me.piepers.king.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
@@ -20,7 +21,10 @@ import java.util.stream.IntStream;
  * The value that a symbol represents is configured in scoreValues. This holds a map with two numbers where key
  * represents the amount of symbols and the value represents the score that is bound to that amount. For example:
  * 3 symbols in a row can represent a score of 150, 4 a score of 200 and 5 a score of 250. The CellSymbolConfig is not
- * aware of the amount of columns a reel actually has. Its just a configuration item that is needed to initialize a slot.
+ * aware of the amount of columns a reel actually has. Its just a configuration item that is needed to initialize a
+ * slot.
+ * <p>
+ * If scoreValues have a null value, this means that the symbol does not represent any score.
  *
  * @author Bas Piepers
  */
@@ -30,6 +34,7 @@ public class CellSymbolConfig implements JsonDomainObject {
     private final Symbol symbol;
     // Must be a list due to JsonObject limitations.
     private final List<Integer> numberAssignment;
+    // Null represents that this symbol doesn't represent any scores (e.g. for empty cells)
     private final Map<SubsequentSymbols, ScoreValue> scoreValues;
 
     public CellSymbolConfig(JsonObject jsonObject) {
@@ -60,17 +65,17 @@ public class CellSymbolConfig implements JsonDomainObject {
      *
      * @param symbol,      the symbol to configure for a cell.
      * @param from,        the starting value of the random number (inclusive) for which this symbol is valid.
-     * @param to,          the end value of the random number (excluding) for which this symbol is valid.
+     * @param toExclusive, the end value of the random number (excluding) for which this symbol is valid.
      * @param scoreValues, the scorevalues configuration. Ie. how many points a specific subsequent set of symbols
      *                     represent.
      * @return an instance of {@link CellSymbolConfig} that can be used in a slot to calculate the score of a spin.
      */
-    public static CellSymbolConfig of(Symbol symbol, int from, int to, Map<SubsequentSymbols, ScoreValue> scoreValues) {
-        if (from >= to) {
+    public static CellSymbolConfig of(Symbol symbol, int from, int toExclusive, Map<SubsequentSymbols, ScoreValue> scoreValues) {
+        if (from >= toExclusive) {
             throw new IllegalArgumentException("From must be smaller than to.");
         }
 
-        Integer[] range = IntStream.range(from, to).boxed().toArray(Integer[]::new);
+        Integer[] range = IntStream.range(from, toExclusive).boxed().toArray(Integer[]::new);
 
         return new CellSymbolConfig(symbol, range, scoreValues);
     }
@@ -120,9 +125,10 @@ public class CellSymbolConfig implements JsonDomainObject {
         return scoreValues;
     }
 
+    @JsonIgnore
     public Integer getScoreValueFor(SubsequentSymbols key) {
         return Objects.nonNull(this.scoreValues) && this.scoreValues.containsKey(key) ?
-                this.scoreValues.get(key).getValue() : this.scoreValues.get(key).getValue();
+                this.scoreValues.get(key).getValue() : 0;
     }
 
     // Convenient methods.
@@ -148,7 +154,7 @@ public class CellSymbolConfig implements JsonDomainObject {
     }
 
     enum Symbol {
-        NONE, SEVEN, BELL, BAR, TWO_BARS, THREE_BARS, EMPTY, IMAGE1, IMAGE2, IMAGE3, IMAGE4, CHAR1, CHAR2, CHAR3, CHAR4, CHAR5, CHAR6;
+        NONE, SEVEN, TWO_SEVENS, THREE_SEVENS, BELL, TWO_BELLS, THREE_BELLS, BAR, TWO_BARS, THREE_BARS, CHERRY, TWO_CHERRIES, THREE_CHERRIES, EMPTY, IMAGE1, IMAGE2, IMAGE3, IMAGE4, CHAR1, CHAR2, CHAR3, CHAR4, CHAR5, CHAR6;
 
 
         public static Symbol resolve(String from) {
@@ -156,10 +162,24 @@ public class CellSymbolConfig implements JsonDomainObject {
             switch (localFrom) {
                 case "SEVEN":
                     return SEVEN;
+                case "TWO_SEVENS":
+                    return TWO_SEVENS;
+                case "THREE_SEVENS":
+                    return THREE_SEVENS;
                 case "BELL":
                     return BELL;
+                case "TWO_BELLS":
+                    return TWO_BELLS;
+                case "THREE_BELLS":
+                    return THREE_BELLS;
                 case "BAR":
                     return BAR;
+                case "CHERRY":
+                    return CHERRY;
+                case "TWO_CHERRIES":
+                    return TWO_CHERRIES;
+                case "THREE_CHERRIES":
+                    return THREE_CHERRIES;
                 case "TWO_BARS":
                     return TWO_BARS;
                 case "THREE_BARS":

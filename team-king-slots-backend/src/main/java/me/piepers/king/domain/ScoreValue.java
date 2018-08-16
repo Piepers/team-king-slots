@@ -32,4 +32,5 @@ public class ScoreValue {
                 "value=" + value +
                 '}';
     }
+
 }

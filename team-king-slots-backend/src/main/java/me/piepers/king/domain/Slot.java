@@ -7,6 +7,7 @@ import io.vertx.core.json.JsonObject;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Slot domain model object that stores the state of a slot
@@ -40,7 +41,7 @@ public class Slot implements JsonDomainObject {
         this.highestNr = jsonObject.getInteger("highestNr");
     }
 
-    private Slot(SlotId id, String name, Long score, Instant created, String player, Reel reel, int lowestNr, int highestNr) {
+    public Slot(SlotId id, String name, Long score, Instant created, String player, Reel reel, int lowestNr, int highestNr) {
         this.id = id;
         this.status = SlotStatus.INITIALIZED;
         this.name = name;
@@ -60,21 +61,41 @@ public class Slot implements JsonDomainObject {
             case CLASSIC:
                 Reel classicReel = Reel.of(3, 3);
                 classicReel.addPayline(1, new Integer[]{2, 2, 2});
-                return new Slot(SlotId.create(), "Classic", 0L, Instant.now(), player, classicReel, 0, 100);
+                Slot slot = new Slot(SlotId.create(), "Classic", 0L, Instant.now(), player, classicReel, 1, 100);
+                ReelConfig classicReelConfig = generateClassicDefaultReelConfig(slot);
+                classicReel.setReelConfig(classicReelConfig);
+                return slot;
             case FIVE_BY_THREE:
                 Reel fiveByThree = Reel.of(3, 5);
                 fiveByThree.addPayline(1, new Integer[]{2, 2, 2, 2, 2});
-                return new Slot(SlotId.create(), "FiveByThree", 0L, Instant.now(), player, fiveByThree, 0, 100);
+                return new Slot(SlotId.create(), "FiveByThree", 0L, Instant.now(), player, fiveByThree, 1, 100);
             case FIVE_BY_FOUR:
                 Reel fiveByFour = Reel.of(4, 5);
                 fiveByFour.addPayline(1, new Integer[]{2, 2, 2, 2, 2});
-                return new Slot(SlotId.create(), "FiveByFour", 0L, Instant.now(), player, fiveByFour, 0, 100);
+                return new Slot(SlotId.create(), "FiveByFour", 0L, Instant.now(), player, fiveByFour, 1, 100);
             default:
                 throw new UnsupportedOperationException("Unsupported slot type.");
         }
     }
 
-    // BUSINESS LOGIC
+    private static ReelConfig generateClassicDefaultReelConfig(Slot slot) {
+        return ReelConfig.of(slot.lowestNr, slot.highestNr)
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.SEVEN, 1, 13,CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{50, 100})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.TWO_SEVENS, 13, 23, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{80, 160})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.THREE_SEVENS, 23, 26, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{100, 200})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.CHERRY, 26, 40,CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{40, 80})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.TWO_CHERRIES, 40, 49, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{90, 180})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.THREE_CHERRIES, 49, 51, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{120, 240})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.BELL, 51, 64,CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{45, 90})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.TWO_BELLS, 64, 75, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{95, 190})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.THREE_BELLS, 75, 76, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{130, 260})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.EMPTY, 76, 101, null));
+
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////BUSINESS LOGIC///////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Slot spin() {
         if (this.status == SlotStatus.SPINNING) {
             throw new IllegalStateException("The slot is already spinning.");
@@ -103,19 +124,55 @@ public class Slot implements JsonDomainObject {
     }
 
     /**
-     * Needed to map the Reels differently: we don't want the key of the Paylines map in the Reel to be present in the
-     * payload and map them back and forth ourselves.
+     * Activate a payline by its reference numbers. If the payline doesn't exist, an exception is thrown. Otherwise the payline is
+     * set to active (even if it was active already).
      *
-     * @return the mapped JsonObject with which Vert.x will call the constructor of the this class (Slot).
+     * @param reference, the reference of the payline (the number of the payline).
+     * @return the {@link Payline} for convenience.
      */
-//    @Override
-//    public JsonObject toJson() {
-//        Map<String, Object> reel = this.reel.toJson().getMap();
-//        JsonObject slot = JsonObject.mapFrom(this);
-//        slot.remove("reel");
-//        slot.put("reel", reel);
-//        return slot;
-//    }
+    public Payline activatePaylineByReference(Integer reference) {
+        Payline p = findOrThrowException(reference);
+
+        return p.activate();
+    }
+
+    /**
+     * De-activate a payline by its reference numbers. If the payline doesn't exist, an exception is thrown. Otherwise the payline is
+     * set to in-active (even if it was in-active already).
+     *
+     * @param reference, the reference of the payline (the number of the payline).
+     * @return the {@link Payline} for convenience.
+     */
+    public Payline deActivatePaylineByReference(Integer reference) {
+        Payline p = findOrThrowException(reference);
+
+        return p.deActivate();
+    }
+
+    private Payline findOrThrowException(Integer reference) {
+        if (Objects.isNull(this.getReel()) || Objects.isNull(this.getReel().getPayLines())) {
+            throw new IllegalStateException("The current slot does not (yet) contain paylines.");
+        }
+        Payline p = this.getPaylineByReference(reference);
+        if (Objects.isNull(p)) {
+            throw new IllegalStateException("No payline exists with reference " + reference);
+        }
+        return p;
+    }
+
+    /**
+     * Get a payline by reference or null if it doesn't exist.
+     *
+     * @param reference, the reference of the payline.
+     * @return the {@link Payline} of the {@link Reel} by its reference.
+     */
+    public Payline getPaylineByReference(Integer reference) {
+        if (Objects.isNull(this.getReel()) || Objects.isNull(this.getReel().getPayLines())) {
+            return null;
+        }
+
+        return this.getReel().getPayLines().stream().filter(payline -> payline.getReference() == reference).findFirst().orElse(null);
+    }
 
     // GETTERS
     public SlotId getId() {

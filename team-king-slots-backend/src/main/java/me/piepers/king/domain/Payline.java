@@ -142,7 +142,18 @@ public class Payline implements JsonDomainObject {
         return new Payline(reference, coordinates, active, bet);
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////// Business rules ///////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    public Payline activate() {
+        this.setActive(true);
+        return this;
+    }
 
+    public Payline deActivate() {
+        this.setActive(false);
+        return this;
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -205,4 +216,5 @@ public class Payline implements JsonDomainObject {
     public void setBet(int bet) {
         this.bet = bet;
     }
+
 }

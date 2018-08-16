@@ -8,7 +8,7 @@
     "initial_block_on_start": true,
     "min_threshold": 100,
     "max_nrs_per_request": 100,
-    "lowest_number": 0,
+    "lowest_number": 1,
     "highest_number": 100
   }
 }

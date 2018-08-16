@@ -8,7 +8,7 @@ import java.util.Objects;
  * @author Bas Piepers
  */
 public enum SubsequentSymbols {
-    THREE(3), FOUR(4), FIVE(5);
+    TWO(2), THREE(3), FOUR(4), FIVE(5);
 
     private int amount;
 
@@ -19,6 +19,8 @@ public enum SubsequentSymbols {
     public static SubsequentSymbols resolve(final String value) {
         final String localValue = value.toUpperCase();
         switch (localValue) {
+            case "TWO":
+                return SubsequentSymbols.TWO;
             case "THREE":
                 return SubsequentSymbols.THREE;
             case "FOUR":

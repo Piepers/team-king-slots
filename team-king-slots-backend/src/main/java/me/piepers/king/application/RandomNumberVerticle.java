@@ -31,7 +31,7 @@ public class RandomNumberVerticle extends AbstractVerticle {
     private static final Integer DEFAULT_MIN_THRESHOLD = 100;
     private static final Integer DEFAULT_MAX_NRS_PER_REQUEST = 10;
     private static final Integer DEFAULT_HIGHEST_NUMBER = 1000;
-    private static final Integer DEFAULT_LOWEST_NUMBER = 0;
+    private static final Integer DEFAULT_LOWEST_NUMBER = 1;
     private static final Integer DEFAULT_BLOCK_AMOUNT = 2000;
 
     private static final String REQUEST_COUNTER_LOCK = "request-counter";
