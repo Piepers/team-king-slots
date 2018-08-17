@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.reactivex.Single;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.Objects;
  */
 @DataObject
 public class Slot implements JsonDomainObject {
+    private final static Logger LOGGER = LoggerFactory.getLogger(Slot.class);
 
     @JsonUnwrapped
     private final SlotId id;
@@ -80,13 +83,13 @@ public class Slot implements JsonDomainObject {
 
     private static ReelConfig generateClassicDefaultReelConfig(Slot slot) {
         return ReelConfig.of(slot.lowestNr, slot.highestNr)
-                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.SEVEN, 1, 13,CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{50, 100})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.SEVEN, 1, 13, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{50, 100})))
                 .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.TWO_SEVENS, 13, 23, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{80, 160})))
                 .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.THREE_SEVENS, 23, 26, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{100, 200})))
-                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.CHERRY, 26, 40,CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{40, 80})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.CHERRY, 26, 40, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{40, 80})))
                 .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.TWO_CHERRIES, 40, 49, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{90, 180})))
                 .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.THREE_CHERRIES, 49, 51, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{120, 240})))
-                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.BELL, 51, 64,CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{45, 90})))
+                .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.BELL, 51, 64, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{45, 90})))
                 .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.TWO_BELLS, 64, 75, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{95, 190})))
                 .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.THREE_BELLS, 75, 76, CellSymbolConfig.symbolScores(new SubsequentSymbols[]{SubsequentSymbols.TWO, SubsequentSymbols.THREE}, new Integer[]{130, 260})))
                 .addCellConfig(CellSymbolConfig.of(CellSymbolConfig.Symbol.EMPTY, 76, 101, null));
@@ -107,6 +110,7 @@ public class Slot implements JsonDomainObject {
 
     // FIXME: it would be better if the cells of the reels are triggered to request a random number themselves rather than having the slot trigger that and assign the numbers.
     public Single<SpinResult> stop(RandomNumberFetcher randomNumberFetcher) {
+        LOGGER.debug("Stopping slot {}. Assigning numbers, mapping symbols and calculating results.", this.id.getId());
         // Check if the status is appropriate to stop the reels on this instance.
         if (this.status == SlotStatus.SPINNING) {
 
@@ -116,7 +120,7 @@ public class Slot implements JsonDomainObject {
                     .fetch(this)
                     .flatMap(numbers -> Single
                             .just(this.reel
-                                    .assignNumbersToReels(numbers)))
+                                    .assignNumbersAndMapSymbols(numbers)))
                     .flatMap(reel -> Single.just(SpinResult.create(this)));
         } else {
             return Single.error(new IllegalStateException("This slot machine is not spinning and can therefore not be stopped."));

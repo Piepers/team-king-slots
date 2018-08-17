@@ -2,7 +2,10 @@ package me.piepers.king.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,7 +25,7 @@ import java.util.stream.IntStream;
  */
 @DataObject
 public class ReelConfig implements JsonDomainObject {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReelConfig.class);
     private final int from;
     private final int to;
     private List<CellSymbolConfig> cellConfig;
@@ -35,7 +38,11 @@ public class ReelConfig implements JsonDomainObject {
     public ReelConfig(JsonObject jsonObject) {
         this.from = jsonObject.getInteger("from");
         this.to = jsonObject.getInteger("to");
-        this.cellConfig = jsonObject.getJsonArray("cellConfig").getList();
+        JsonArray cellConfigArr = jsonObject.getJsonArray("cellConfig");
+        if (Objects.nonNull(cellConfigArr)) {
+            this.cellConfig = cellConfigArr.stream().map(o -> new CellSymbolConfig((JsonObject)o)).collect(Collectors.toList());
+        }
+//        this.cellConfig = jsonObject.getJsonArray("cellConfig").getList();
     }
 
     public static ReelConfig of(final int from, final int to) {
@@ -50,6 +57,10 @@ public class ReelConfig implements JsonDomainObject {
 
         return new ReelConfig(from, to);
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////// Business Logic ///////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Add a new configuration to this ReelConfig. Validates that the assigned numbers of the given
@@ -102,6 +113,28 @@ public class ReelConfig implements JsonDomainObject {
         }
     }
 
+    /**
+     * Retrieves the symbol that is assigned to the given number. Throws an exception if the given number is not
+     * assigned. Finds the first symbol that is assign to this number ie. in case multiple numbers "have" this symbol
+     * they are ignored (because we assume that the given number is coming from a cell that will get that number
+     * assigned to it).
+     *
+     * @param number, the number for which to retrieve the assigned symbol.
+     * @return the {@link me.piepers.king.domain.CellSymbolConfig.Symbol} for the given number.
+     */
+    @JsonIgnore
+    public CellSymbolConfig.Symbol getSymbolByNumber(Integer number) {
+        CellSymbolConfig config = this.cellConfig
+                .stream()
+                .filter(c -> c.hasAssignedNumber(number))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("The given number is not assigned to any of the cells in this reel (" + number + ")."));
+        return config.getSymbol();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////// Accessors ////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public int getFrom() {
         return from;
     }
@@ -114,6 +147,9 @@ public class ReelConfig implements JsonDomainObject {
         return cellConfig;
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////// Equals, hashCode and toString ////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -132,5 +168,14 @@ public class ReelConfig implements JsonDomainObject {
         result = 31 * result + to;
         result = 31 * result + (cellConfig != null ? cellConfig.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "ReelConfig{" +
+                "from=" + from +
+                ", to=" + to +
+                ", cellConfig=" + cellConfig +
+                '}';
     }
 }

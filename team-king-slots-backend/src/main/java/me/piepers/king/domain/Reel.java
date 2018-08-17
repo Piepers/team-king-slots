@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
  */
 @DataObject
 public class Reel implements JsonDomainObject {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Reel.class);
+
     private final List<List<ReelCell>> cells;
     // FIXME: must be a map, indeed, but can't map this somehow.
     //    private Map<Integer, Payline> payLines;
@@ -178,7 +182,15 @@ public class Reel implements JsonDomainObject {
                                         payline.getCoordinates().equals(p.getCoordinates()));
     }
 
-    public Reel assignNumbersToReels(List<Integer> numbers) {
+    /**
+     * Based on the list of numbers it assigns these numbers to the cells and also maps the numbers to the correct
+     * symbol according to the {@link ReelConfig} that is stored on this reel.
+     *
+     * @param numbers, the list of random numbers to assign.
+     * @return this Reel, for convenience.
+     */
+    public Reel assignNumbersAndMapSymbols(List<Integer> numbers) {
+        LOGGER.debug("Assigning {} numbers.", numbers.size());
         if (numbers.size() < this.getCellAmount()) {
             throw new IllegalArgumentException("Expect the amount of numbers to be equal to the size of the reel");
         }
@@ -189,10 +201,19 @@ public class Reel implements JsonDomainObject {
                 .stream()
                 .forEach(row -> row
                         .stream()
-                        .forEach(cell -> cell
-                                .setValue(numbers
-                                        .get(count.getAndIncrement()))));
+                        .forEach(cell -> assignToCell(numbers, count, cell)));
+
+        LOGGER.debug("Assigned numbers and mapped symbols to cells of reel.\n{}", this.toString());
+
         return this;
+    }
+
+    private void assignToCell(List<Integer> numbers, AtomicInteger count, ReelCell cell) {
+        int number = numbers.get(count.getAndIncrement());
+        cell
+                .setValue(number);
+        CellSymbolConfig.Symbol symbol = reelConfig.getSymbolByNumber(number);
+        cell.setSymbol(symbol);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////

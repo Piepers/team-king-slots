@@ -35,21 +35,23 @@ public class CellSymbolConfig implements JsonDomainObject {
     // Must be a list due to JsonObject limitations.
     private final List<Integer> numberAssignment;
     // Null represents that this symbol doesn't represent any scores (e.g. for empty cells)
-    private final Map<SubsequentSymbols, ScoreValue> scoreValues;
+    private Map<SubsequentSymbols, ScoreValue> scoreValues;
 
     public CellSymbolConfig(JsonObject jsonObject) {
         this.symbol = Symbol.resolve(jsonObject.getString("symbol"));
         this.numberAssignment = jsonObject.getJsonArray("numberAssignment").getList();
         JsonObject scoreConfig = jsonObject.getJsonObject("scoreValues");
-        Map<String, Object> scoreConfigMap = scoreConfig.getMap();
-        // Map a String, Object pair to a SubsequentSumbols, ScoreValue pair.
-        this.scoreValues = scoreConfigMap
-                .keySet()
-                .stream()
-                .map(key -> SubsequentSymbols.resolve(key))
-                .collect(Collectors
-                        .toMap(s -> s,
-                                s -> ScoreValue.of((Integer) scoreConfigMap.get(s.name()))));
+        if (Objects.nonNull(scoreConfig)) {
+            Map<String, Object> scoreConfigMap = scoreConfig.getMap();
+            // Map a String, Object pair to a SubsequentSymbols, ScoreValue pair.
+            this.scoreValues = scoreConfigMap
+                    .keySet()
+                    .stream()
+                    .map(key -> SubsequentSymbols.resolve(key))
+                    .collect(Collectors
+                            .toMap(s -> s,
+                                    s -> ScoreValue.of((Integer) scoreConfigMap.get(s.name()))));
+        }
     }
 
     private CellSymbolConfig(Symbol symbol, Integer[] numberAssignment, Map<SubsequentSymbols, ScoreValue> scoreValues) {
@@ -142,6 +144,17 @@ public class CellSymbolConfig implements JsonDomainObject {
             symbolconfig.put(subsequentSymbols[i], ScoreValue.of(value[i]));
         }
         return Collections.unmodifiableMap(symbolconfig);
+    }
+
+    /**
+     * Does this configuration has a symbol assigned to the given number?
+     *
+     * @param number, the number to check
+     * @return true in case one of the numbers in the list of assigned numbers is present in this configuration or false
+     * in case none exist (or the list is null).
+     */
+    public boolean hasAssignedNumber(Integer number) {
+        return Objects.nonNull(this.getNumberAssignment()) && this.getNumberAssignment().stream().anyMatch(n -> n == number);
     }
 
     @Override

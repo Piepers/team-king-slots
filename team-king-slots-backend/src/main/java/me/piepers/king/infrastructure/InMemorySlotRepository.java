@@ -50,7 +50,7 @@ public class InMemorySlotRepository implements SlotRepository {
         LOGGER.debug("Updating slot in repository with id: {}", slot.getId().getId());
 
         // TODO: probably good to at least validate if an id is present.
-        Slot previousValue = slots.put(slot.getId(), slot);
+        slots.put(slot.getId(), slot);
 
         resultHandler.handle(Future.succeededFuture(slots.get(slot.getId())));
     }
